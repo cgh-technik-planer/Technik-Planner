@@ -596,6 +596,7 @@
 
     window.saveAvailability = async function() {
       if (!STATE.plan) return;
+
       const my = STATE.responses[STATE.user.id] || {};
       const rows = Object.entries(my).map(([sunday, response]) => ({
         plan_id: STATE.plan.id,
