@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 CGH Technik Planer</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #208085;
+            --primary-dark: #1a6770;
+            --admin: #c01530;
+            --admin-dark: #a01229;
+            --user: #22a344;
+            --user-dark: #1a8637;
+            --bg: #f5f5f5;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --text-light: #666;
+            --border: #e0e0e0;
+            --success: #22a344;
+            --warning: #f0a500;
+            --error: #c01530;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .login-container {
+            max-width: 420px;
+            margin: 80px auto;
+            padding: 40px;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .login-container h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--admin));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-container p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(32, 128, 133, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(32, 128, 133, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1a8637;
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #a01229;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 13px;
+            width: auto;
+        }
+
+        .header {
+            padding: 30px 20px;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-admin {
+            background: linear-gradient(135deg, var(--admin), var(--admin-dark));
+        }
+
+        .header-user {
+            background: linear-gradient(135deg, var(--user), var(--user-dark));
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.95;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 10px;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .section {
+            background: var(--surface);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: #fafafa;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .color-red {
+            background: #ffcdd2;
+            border-color: #ef5350;
+        }
+
+        .color-red.selected {
+            box-shadow: 0 0 0 2px var(--error);
+        }
+
+        .color-yellow {
+            background: #fff9c4;
+            border-color: #fbc02d;
+        }
+
+        .color-yellow.selected {
+            box-shadow: 0 0 0 2px var(--warning);
+        }
+
+        .color-green {
+            background: #c8e6c9;
+            border-color: #43a047;
+        }
+
+        .color-green.selected {
+            box-shadow: 0 0 0 2px var(--success);
+        }
+
+        .tech-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .tech-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(32, 128, 133, 0.15);
+        }
+
+        .tech-info {
+            flex: 1;
+        }
+
+        .tech-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .tech-info p {
+            margin: 3px 0;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+            background: var(--primary);
+            color: white;
+        }
+
+        .plan-table {
+            overflow-x: auto;
+        }
+
+        .plan-table table {
+            min-width: 100%;
+        }
+
+        .date-cell {
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+
+        .response-cell {
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .button-group .btn {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .setup-notice {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .setup-notice h3 {
+            color: #856404;
+            margin: 0 0 10px 0;
+        }
+
+        .setup-notice p {
+            color: #856404;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .setup-notice code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            margin: 0;
+            color: #1565c0;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .login-container {
+                margin: 40px auto;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .tech-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group .btn {
+                min-width: auto;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // ===== KONFIGURATION - HIER DEINE EMAILJS KEYS EINFÜGEN =====
+        const CONFIG = {
+            adminEmail: 'admin@CGH.de',
+            adminPass: 'Technik2026',
+            emailjs: {
+                publicKey: 'DEIN_PUBLIC_KEY_HIER',  // https://dashboard.emailjs.com/admin/account
+                serviceId: 'DEIN_SERVICE_ID_HIER',  // https://dashboard.emailjs.com/admin/services
+                templateAvailability: 'template_availability',
+                templateFinal: 'template_final'
+            }
+        };
+
+        // ===== APP STATE =====
+        const APP = {
+            currentUser: null,
+            isAdmin: false,
+            technicians: JSON.parse(localStorage.getItem('cgh_technicians')) || [],
+            technicianPasswords: JSON.parse(localStorage.getItem('cgh_tech_passwords')) || {},
+            currentPlan: JSON.parse(localStorage.getItem('cgh_currentPlan')) || null,
+            responses: JSON.parse(localStorage.getItem('cgh_responses')) || {},
+            assignments: JSON.parse(localStorage.getItem('cgh_assignments')) || {}
+        };
+
+        // ===== SAVE DATA =====
+        function saveData() {
+            localStorage.setItem('cgh_technicians', JSON.stringify(APP.technicians));
+            localStorage.setItem('cgh_tech_passwords', JSON.stringify(APP.technicianPasswords));
+            localStorage.setItem('cgh_currentPlan', JSON.stringify(APP.currentPlan));
+            localStorage.setItem('cgh_responses', JSON.stringify(APP.responses));
+            localStorage.setItem('cgh_assignments', JSON.stringify(APP.assignments));
+        }
+
+        // ===== EMAILJS INIT =====
+        if (CONFIG.emailjs.publicKey && CONFIG.emailjs.publicKey !== 'DEIN_PUBLIC_KEY_HIER') {
+            emailjs.init(CONFIG.emailjs.publicKey);
+        }
+
+        // ===== SEND PLAN EMAILS =====
+        function sendPlanEmails() {
+            const sundays = APP.currentPlan.sundays.map(d => new Date(d).toLocaleDateString('de-DE')).join(', ');
+            
+            APP.technicians.forEach(tech => {
+                const templateParams = {
+                    to_email: tech.email,
+                    technician_name: tech.name,
+                    plan_link: window.location.href,
+                    sundays: sundays,
+                    weeks: APP.currentPlan.sundays.length,
+                    admin_email: CONFIG.adminEmail
+                };
+
+                emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateAvailability, templateParams)
+                    .then(response => {
+                        console.log('✅ Email an ' + tech.email + ' versendet', response.status);
+                    })
+                    .catch(error => {
+                        console.error('❌ Email-Fehler für ' + tech.email + ':', error);
+                    });
+            });
+        }
+
+        // ===== SEND FINAL EMAILS =====
+        function sendFinalEmails() {
+            APP.technicians.forEach(tech => {
+                const techAssignments = Object.entries(APP.assignments)
+                    .filter(([_, team]) => team.includes(tech.id))
+                    .map(([date, _]) => new Date(date).toLocaleDateString('de-DE'))
+                    .join(', ');
+
+                if (techAssignments) {
+                    const templateParams = {
+                        to_email: tech.email,
+                        technician_name: tech.name,
+                        assignments: techAssignments,
+                        admin_email: CONFIG.adminEmail,
+                        role: tech.role === 'ton' ? '🎤 Ton Techniker' : tech.role === 'video' ? '📹 Video Techniker' : '🎤📹 Allrounder'
+                    };
+
+                    emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateFinal, templateParams)
+                        .then(response => {
+                            console.log('✅ Final-Email an ' + tech.email + ' versendet');
+                        })
+                        .catch(error => {
+                            console.error('❌ Email-Fehler:', error);
+                        });
+                }
+            });
+        }
+
+        // ===== RENDER LOGIN =====
+        function renderLogin() {
+            document.getElementById('app').innerHTML = `
+                <div class="login-container">
+                    <h1>🔧 CGH Technik</h1>
+                    <p>Professionelle Planung für dein Technik-Team</p>
+                    
+                    <div class="form-group">
+                        <label>E-Mail Adresse</label>
+                        <input type="email" id="loginEmail" placeholder="deine@email.de">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Passwort</label>
+                        <input type="password" id="loginPass" placeholder="Dein Passwort">
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
+                    
+                    <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
+                        <strong>👨‍💼 Admin Demo:</strong><br>
+                        admin@CGH.de / Technik2026<br><br>
+                        <strong>🔐 Erste Anmeldung?</strong><br>
+                        Nutze deine E-Mail und ein beliebiges Passwort!
+                    </p>
+                </div>
+            `;
+        }
+
+        // ===== LOGIN FUNCTION =====
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPass').value;
+
+            if (!email || !pass) {
+                alert('Bitte E-Mail und Passwort eingeben');
+                return;
+            }
+
+            APP.currentUser = email;
+
+            // Admin Login
+            if (email === CONFIG.adminEmail && pass === CONFIG.adminPass) {
+                APP.isAdmin = true;
+                renderAdmin();
+                return;
+            }
+
+            // Techniker Login
+            const tech = APP.technicians.find(t => t.email === email);
+            
+            if (!tech) {
+                alert('❌ E-Mail nicht bekannt. Frag den Admin, dich hinzuzufügen!');
+                return;
+            }
+
+            // Passwort Check
+            if (APP.technicianPasswords[email]) {
+                // Passwort schon gesetzt
+                if (APP.technicianPasswords[email] !== pass) {
+                    alert('❌ Falsches Passwort!');
+                    return;
+                }
+                APP.isAdmin = false;
+                renderUser();
+            } else {
+                // Erste Anmeldung - Passwort setzen
+                alert(`✅ Willkommen ${tech.name}!\n\nDein Passwort "${pass}" wurde gespeichert.\nBeim nächsten Login nutzt du deine E-Mail + dieses Passwort!`);
+                APP.technicianPasswords[email] = pass;
+                saveData();
+                APP.isAdmin = false;
+                renderUser();
+            }
+        }
+
+        // ===== RENDER ADMIN =====
+        function renderAdmin() {
+            const techs = APP.technicians;
+            const plan = APP.currentPlan;
+
+            const emailNotice = (!CONFIG.emailjs.publicKey || CONFIG.emailjs.publicKey === 'DEIN_PUBLIC_KEY_HIER') ? `
+                <div class="setup-notice">
+                    <h3>⚠️ EmailJS nicht konfiguriert</h3>
+                    <p>Um Mails zu versenden, trage bitte deine EmailJS Keys ein:</p>
+                    <p><strong>Schritt 1:</strong> Gehe zu <code>emailjs.com</code> und erstelle einen Account</p>
+                    <p><strong>Schritt 2:</strong> Kopiere deine Public Key und Service ID</p>
+                    <p><strong>Schritt 3:</strong> Trage sie in der index.html Datei bei CONFIG.emailjs ein</p>
+                    <p>Danach funktionieren automatische Emails!</p>
+                </div>
+            ` : '';
+
+            const planContent = plan ? `
+                <div class="section">
+                    <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
+                    <div class="plan-table">
+                        <table>
+                            <tr>
+                                <th>Sonntag</th>
+                                ${techs.map(t => `<th>${t.name} (${t.role === 'ton' ? '🎤' : t.role === 'video' ? '📹' : '🎤📹'})</th>`).join('')}
+                            </tr>
+                            ${plan.sundays.map(date => `
+                                <tr>
+                                    <td class="date-cell">${new Date(date).toLocaleDateString('de-DE')}</td>
+                                    ${techs.map(tech => {
+                                        const resp = APP.responses[tech.id]?.[date];
+                                        const emoji = resp === 'green' ? '🟢' : resp === 'yellow' ? '🟡' : resp === 'red' ? '🔴' : '❓';
+                                        return `<td class="response-cell">${emoji}</td>`;
+                                    }).join('')}
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-success btn-small" onclick="autoAssignTeams()">🤖 Teams zuweisen (1 Ton + 1 Video)</button>
+                        <button class="btn btn-primary btn-small" onclick="finalizePlan()">📧 Plan finalisieren</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>✅ Zuweisungen für diese Sontage</h3>
+                    ${plan.sundays.map(date => {
+                        const assigned = APP.assignments[date] || [];
+                        const techNames = assigned.map(id => APP.technicians.find(t => t.id === id)?.name || '?').join(' + ');
+                        return `
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                <strong>${new Date(date).toLocaleDateString('de-DE')}</strong> → 
+                                ${techNames || '❌ Noch nicht zugewiesen'}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            ` : '<p style="color: var(--text-light);">Kein aktiver Plan</p>';
+
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="header header-admin">
+                        <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
+                        <p>Tom Stahl & Jan Burkhardt</p>
+                    </div>
+
+                    ${emailNotice}
+
+                    <div class="section">
+                        <h3>👥 Techniker verwalten</h3>
+                        <div class="form-row">
+                            <input id="newTechName" type="text" placeholder="Name z.B. Max Müller">
+                            <input id="newTechEmail" type="email" placeholder="E-Mail z.B. max@example.de">
+                        </div>
+                        <div class="form-row">
+                            <select id="newTechRole">
+                                <option value="">-- Rolle wählen --</option>
+                                <option value="ton">🎤 Ton Techniker</option>
+                                <option value="video">📹 Video Techniker</option>
+                                <option value="both">🎤📹 Beides</option>
+                            </select>
+                            <button class="btn btn-success" onclick="addTechnician()">➕ Techniker hinzufügen</button>
+                        </div>
+
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            ${techs.length === 0 ? '<p style="color: var(--text-light);">Noch keine Techniker</p>' : techs.map(t => `
+                                <div class="tech-card">
+                                    <div class="tech-info">
+                                        <h4>${t.name}</h4>
+                                        <p>
+                                            <span class="role-badge">${t.role === 'ton' ? '🎤 Ton' : t.role === 'video' ? '📹 Video' : '🎤📹 Beides'}</span>
+                                            ${t.email}
+                                        </p>
+                                        <p style="font-size: 12px; margin-top: 5px;">
+                                            ${APP.technicianPasswords[t.email] ? '✅ Passwort gesetzt' : '⏳ Wartet auf erste Anmeldung'}
+                                        </p>
+                                    </div>
+                                    <button class="btn btn-danger btn-small" onclick="removeTechnician('${t.id}')">🗑️</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <h3>🆕 Neuen Plan erstellen</h3>
+                        <div class="form-row">
+                            <input id="planStart" type="date">
+                            <input id="planWeeks" type="number" placeholder="Anzahl Sontage" value="4" min="1" max="12" style="width: 100%;">
+                        </div>
+                        <button class="btn btn-primary" onclick="createPlan()">📅 Plan erstellen & Mails versenden</button>
+                    </div>
+
+                    ${planContent}
+
+                    <div class="section">
+                        <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== RENDER USER =====
+        function renderUser() {
+            const plan = APP.currentPlan;
+            const tech = APP.technicians.find(t => t.email === APP.currentUser);
+
+            const content = plan ? `
+                <div class="section">
+                    <h2>📅 Deine Verfügbarkeit</h2>
+                    <p style="color: var(--text-light); margin-bottom: 20px;">Wähle für jeden Sonntag: Rot (nicht verfügbar) | Gelb (eher nicht) | Grün (verfügbar)</p>
+                    
+                    <table>
+                        <tr>
+                            <th style="width: 40%;">Sonntag</th>
+                            <th style="width: 60%; text-align: center;">Deine Verfügbarkeit</th>
+                        </tr>
+                        ${plan.sundays.map(date => {
+                            const myResp = APP.responses[APP.currentUser]?.[date] || '';
+                            return `
+                                <tr>
+                                    <td><strong>${new Date(date).toLocaleDateString('de-DE')}</strong></td>
+                                    <td>
+                                        <div class="color-row">
+                                            <div class="color-option color-red ${myResp === 'red' ? 'selected' : ''}" onclick="setAvailability('${date}', 'red')" title="Nicht verfügbar"></div>
+                                            <div class="color-option color-yellow ${myResp === 'yellow' ? 'selected' : ''}" onclick="setAvailability('${date}', 'yellow')" title="Eher nicht"></div>
+                                            <div class="color-option color-green ${myResp === 'green' ? 'selected' : ''}" onclick="setAvailability('${date}', 'green')" title="Verfügbar"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </table>
+                    <button class="btn btn-success" onclick="saveAvailability()" style="margin-top: 20px;">💾 Verfügbarkeit speichern</button>
+                </div>
+
+                <div class="section">
+                    <h2>✅ Deine zugewiesenen Termine</h2>
+                    ${Object.entries(APP.assignments).filter(([_, team]) => team.includes(APP.currentUser)).length === 0 ? 
+                        '<p style="color: var(--text-light);">Noch keine Zuweisung vorhanden</p>' :
+                        Object.entries(APP.assignments).map(([date, team]) => 
+                            team.includes(APP.currentUser) ? `
+                                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--success);">
+                                    <strong>📍 ${new Date(date).toLocaleDateString('de-DE')}</strong><br>
+                                    <span style="color: var(--text-light);">Mit: ${team.filter(id => id !== APP.currentUser).map(id => APP.technicians.find(t => t.id === id)?.name || '?').join(', ')}</span>
+                                </div>
+                            ` : ''
+                        ).join('')
+                    }
+                </div>
+            ` : '<div class="section"><p style="color: var(--text-light);">⏳ Admin erstellt gerade einen Plan für dich...</p></div>';
+
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="header header-user">
+                        <h1>👤 Hallo ${APP.currentUser.split('@')[0]} <span class="badge">TECHNIKER</span></h1>
+                        <p>${tech ? (tech.role === 'ton' ? '🎤 Ton Techniker' : tech.role === 'video' ? '📹 Video Techniker' : '🎤📹 Allrounder') : 'Techniker'}</p>
+                    </div>
+
+                    <div class="info-box">
+                        <p>✅ Du bist angemeldet als <strong>${APP.currentUser}</strong></p>
+                    </div>
+
+                    ${content}
+
+                    <div class="section">
+                        <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== ADD TECHNICIAN =====
+        function addTechnician() {
+            const name = document.getElementById('newTechName').value.trim();
+            const email = document.getElementById('newTechEmail').value.trim();
+            const role = document.getElementById('newTechRole').value;
+
+            if (!name || !email || !role) {
+                alert('❌ Alle Felder ausfüllen!');
+                return;
+            }
+
+            if (APP.technicians.find(t => t.email === email)) {
+                alert('❌ Diese E-Mail ist bereits registriert!');
+                return;
+            }
+
+            APP.technicians.push({
+                id: Date.now().toString(),
+                name,
+                email,
+                role
+            });
+            saveData();
+            renderAdmin();
+            alert(`✅ ${name} hinzugefügt!\n\nEr kann sich jetzt mit seiner E-Mail anmelden!`);
+        }
+
+        // ===== REMOVE TECHNICIAN =====
+        function removeTechnician(id) {
+            const tech = APP.technicians.find(t => t.id === id);
+            if (confirm(`Techniker "${tech.name}" wirklich löschen?`)) {
+                APP.technicians = APP.technicians.filter(t => t.id !== id);
+                delete APP.technicianPasswords[tech.email];
+                saveData();
+                renderAdmin();
+                alert('✅ Gelöscht!');
+            }
+        }
+
+        // ===== CREATE PLAN =====
+        function createPlan() {
+            const startDate = new Date(document.getElementById('planStart').value);
+            const weeks = parseInt(document.getElementById('planWeeks').value);
+
+            if (!startDate || isNaN(startDate)) {
+                alert('❌ Startdatum wählen!');
+                return;
+            }
+
+            const sundays = [];
+            let current = new Date(startDate);
+            
+            for (let i = 0; i < weeks; i++) {
+                const sunday = new Date(current);
+                const day = sunday.getDay();
+                const diff = sunday.getDate() - day + (day === 0 ? -6 : 1);
+                sunday.setDate(diff);
+                
+                sundays.push(sunday.toISOString().split('T')[0]);
+                current.setDate(current.getDate() + 7);
+            }
+
+            APP.currentPlan = {
+                id: Date.now().toString(),
+                sundays,
+                status: 'responses_pending',
+                created: new Date().toISOString()
+            };
+
+            APP.responses = {};
+            APP.assignments = {};
+
+            saveData();
+            renderAdmin();
+
+            if (CONFIG.emailjs.publicKey && CONFIG.emailjs.publicKey !== 'DEIN_PUBLIC_KEY_HIER') {
+                sendPlanEmails();
+                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n📧 Mails an Techniker versendet!`);
+            } else {
+                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n⚠️ Mails deaktiviert (EmailJS nicht konfiguriert)\n\nTechniker können trotzdem ihre Verfügbarkeit eintragen!`);
+            }
+        }
+
+        // ===== SET AVAILABILITY =====
+        function setAvailability(date, color) {
+            if (!APP.responses[APP.currentUser]) {
+                APP.responses[APP.currentUser] = {};
+            }
+            APP.responses[APP.currentUser][date] = color;
+            renderUser();
+        }
+
+        // ===== SAVE AVAILABILITY =====
+        function saveAvailability() {
+            saveData();
+            alert('✅ Verfügbarkeit gespeichert!\n\nAdmin sieht deine Antwort sofort.');
+        }
+
+        // ===== AUTO ASSIGN TEAMS =====
+        function autoAssignTeams() {
+            if (!APP.currentPlan) return;
+
+            APP.assignments = {};
+
+            APP.currentPlan.sundays.forEach(date => {
+                const greenTons = APP.technicians.filter(t => 
+                    (APP.responses[t.id]?.[date] === 'green' || APP.responses[t.id]?.[date] === 'yellow') &&
+                    (t.role === 'ton' || t.role === 'both')
+                );
+
+                const greenVideos = APP.technicians.filter(t => 
+                    (APP.responses[t.id]?.[date] === 'green' || APP.responses[t.id]?.[date] === 'yellow') &&
+                    (t.role === 'video' || t.role === 'both')
+                );
+
+                if (greenTons.length > 0 && greenVideos.length > 0) {
+                    APP.assignments[date] = [greenTons[0].id, greenVideos[0].id];
+                } else if (greenTons.length > 0) {
+                    APP.assignments[date] = [greenTons[0].id];
+                } else if (greenVideos.length > 0) {
+                    APP.assignments[date] = [greenVideos[0].id];
+                }
+            });
+
+            saveData();
+            renderAdmin();
+            alert('✅ Teams automatisch zugewiesen!\n\n1x Ton + 1x Video pro Sonntag (wenn verfügbar)');
+        }
+
+        // ===== FINALIZE PLAN =====
+        function finalizePlan() {
+            if (!APP.currentPlan) return;
+
+            APP.currentPlan.status = 'finalized';
+            saveData();
+
+            if (CONFIG.emailjs.publicKey && CONFIG.emailjs.publicKey !== 'DEIN_PUBLIC_KEY_HIER') {
+                sendFinalEmails();
+                alert('✅ Plan finalisiert!\n\n📧 Final-Mails an Techniker versendet!');
+            } else {
+                alert('✅ Plan finalisiert!\n\n⚠️ Final-Mails konnten nicht versendet werden\n(EmailJS nicht konfiguriert)');
+            }
+
+            renderAdmin();
+        }
+
+        // ===== LOGOUT =====
+        function logout() {
+            APP.currentUser = null;
+            APP.isAdmin = false;
+            renderLogin();
+        }
+
+        // ===== INIT =====
+        renderLogin();
+    </script>
+</body>
+</html>
