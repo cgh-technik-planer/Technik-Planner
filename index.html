@@ -5,155 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🔧 CGH Technik Planer</title>
 
-  <!-- Supabase JS via CDN (Opera-safe, no ESM import) -->
+  <!-- Supabase JS via CDN (no ESM import) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --primary: #208085;
-      --primary-dark: #1a6770;
-      --admin: #c01530;
-      --admin-dark: #a01229;
-      --user: #22a344;
-      --user-dark: #1a8637;
-      --bg: #f5f5f5;
-      --surface: #ffffff;
-      --text: #1a1a1a;
-      --text-light: #666;
-      --border: #e0e0e0;
-      --success: #22a344;
-      --warning: #f0a500;
-      --error: #c01530;
+      --primary: #208085; --primary-dark: #1a6770;
+      --admin: #c01530; --admin-dark: #a01229;
+      --user: #22a344; --user-dark: #1a8637;
+      --bg: #f5f5f5; --surface: #ffffff;
+      --text: #1a1a1a; --text-light: #666;
+      --border: #e0e0e0; --success: #22a344;
+      --warning: #f0a500; --error: #c01530;
     }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
+      background: var(--bg); color: var(--text); line-height: 1.6;
     }
-
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-
     .login-container {
-      max-width: 420px;
-      margin: 80px auto;
-      padding: 40px;
-      background: var(--surface);
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      text-align: center;
+      max-width: 420px; margin: 80px auto; padding: 40px;
+      background: var(--surface); border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center;
     }
-
     .login-container h1 {
-      font-size: 32px;
-      margin-bottom: 10px;
+      font-size: 32px; margin-bottom: 10px;
       background: linear-gradient(135deg, var(--primary), var(--admin));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-
     .login-container p { color: var(--text-light); margin-bottom: 20px; }
-
     .form-group { margin-bottom: 20px; text-align: left; }
     label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
-
     input, select {
-      width: 100%;
-      padding: 12px 15px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 16px;
-      font-family: inherit;
+      width: 100%; padding: 12px 15px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 16px; font-family: inherit;
       transition: all 0.3s ease;
     }
-
     input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary);
+      outline: none; border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(32,128,133,0.1);
     }
-
     .btn {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.3s ease; display: inline-flex;
+      align-items: center; justify-content: center; gap: 8px;
     }
-
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(32,128,133,0.3); }
-
     .btn-success { background: var(--success); color: #fff; }
     .btn-success:hover { background: var(--user-dark); }
-
     .btn-danger { background: var(--error); color: #fff; }
     .btn-danger:hover { background: var(--admin-dark); }
-
     .btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
 
     .header {
-      padding: 30px 20px;
-      border-radius: 12px;
-      color: white;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px 20px; border-radius: 12px; color: white;
+      margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
-
     .header-admin { background: linear-gradient(135deg, var(--admin), var(--admin-dark)); }
     .header-user  { background: linear-gradient(135deg, var(--user), var(--user-dark)); }
-
     .header h1 { margin: 0; font-size: 28px; }
     .header p { margin: 5px 0 0 0; opacity: 0.95; }
 
     .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-left: 10px;
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; margin-left: 10px;
       background: rgba(255,255,255,0.2);
     }
-
     .section {
-      background: var(--surface);
-      padding: 25px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      background: var(--surface); padding: 25px; border-radius: 12px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-
     .section h2 { font-size: 20px; margin-bottom: 20px; }
     .section h3 { font-size: 16px; margin-bottom: 15px; }
 
     .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 20px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 15px; margin-bottom: 20px;
     }
     .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th {
-      background: #f8f9fa;
-      padding: 12px 15px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 2px solid var(--border);
-      font-size: 13px;
-      text-transform: uppercase;
+      background: #f8f9fa; padding: 12px 15px; text-align: left;
+      font-weight: 600; border-bottom: 2px solid var(--border);
+      font-size: 13px; text-transform: uppercase;
     }
     td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
     tr:hover { background: #fafafa; }
@@ -177,63 +115,46 @@
     .color-green { background:#c8e6c9; border-color:#43a047; }
 
     .tech-card {
-      background: var(--surface);
-      border: 2px solid var(--border);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 12px;
+      background: var(--surface); border: 2px solid var(--border);
+      padding: 15px; border-radius: 8px; margin-bottom: 12px;
       display:flex; justify-content:space-between; align-items:center;
       transition: all 0.3s ease;
     }
     .tech-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(32,128,133,0.15); }
-
     .tech-info { flex: 1; }
     .tech-info h4 { margin:0 0 5px 0; font-size:16px; }
     .tech-info p { margin:3px 0; font-size:13px; color: var(--text-light); }
 
     .role-badge {
-      display:inline-block;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-right: 5px;
-      background: var(--primary);
-      color: white;
+      display:inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; margin-right: 5px;
+      background: var(--primary); color: white;
     }
 
     .button-group { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
     .button-group .btn { flex:1; min-width: 150px; }
 
     .tech-badge {
-      display:inline-block;
-      background: var(--primary);
-      color:#fff;
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      margin-right: 6px;
-      margin-bottom: 6px;
+      display:inline-flex; align-items:center; gap:10px;
+      background: var(--primary); color:#fff; padding: 6px 10px;
+      border-radius: 8px; font-size: 12px; margin-right: 6px; margin-bottom: 6px;
     }
-    .tech-badge .remove { cursor:pointer; margin-left:8px; font-weight:700; opacity:0.9; }
-    .tech-badge .remove:hover { opacity:1; text-decoration: underline; }
+    .tech-badge .remove {
+      cursor:pointer; font-weight:700; opacity:0.95;
+      background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px;
+      user-select: none;
+    }
+    .tech-badge .remove:hover { opacity:1; }
 
     .info-box {
-      background: #e3f2fd;
-      border-left: 4px solid var(--primary);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+      background: #e3f2fd; border-left: 4px solid var(--primary);
+      padding: 15px; border-radius: 8px; margin-bottom: 20px;
     }
     .info-box p { margin:0; color:#1565c0; font-size:14px; }
 
     .fatal {
-      max-width: 1000px;
-      margin: 40px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      border: 2px solid var(--error);
+      max-width: 1000px; margin: 40px auto; background: #fff;
+      padding: 20px; border-radius: 12px; border: 2px solid var(--error);
     }
     .fatal pre { white-space: pre-wrap; background:#f7f7f7; padding:10px; border-radius:8px; overflow:auto; margin-top:10px; }
 
@@ -251,15 +172,16 @@
     }
   </style>
 </head>
+
 <body>
   <div id="app"></div>
 
   <script>
-    // ====== CONFIG ======
+    // ========= SUPABASE CONFIG =========
     const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
 
-    // Supabase global object comes from CDN script
+    // CDN exposes global "supabase"
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -290,6 +212,7 @@
     const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
     const toast = (msg) => alert(msg);
 
+    // ======== Data load ========
     async function loadSession() {
       const { data } = await sb.auth.getSession();
       STATE.user = data.session?.user || null;
@@ -316,10 +239,7 @@
       if (error) throw error;
 
       STATE.plan = (data && data.length) ? data[0] : null;
-      if (!STATE.plan) {
-        STATE.planSundays = [];
-        return null;
-      }
+      if (!STATE.plan) { STATE.planSundays = []; return null; }
 
       const { data: sundays, error: e2 } = await sb
         .from("plan_sundays")
@@ -339,17 +259,12 @@
         .eq("role", "tech")
         .order("created_at", { ascending: true });
       if (error) throw error;
-
       STATE.technicians = data || [];
       return STATE.technicians;
     }
 
     async function fetchResponsesAndAssignments() {
-      if (!STATE.plan) {
-        STATE.responses = {};
-        STATE.assignments = {};
-        return;
-      }
+      if (!STATE.plan) { STATE.responses = {}; STATE.assignments = {}; return; }
 
       const { data: resp, error: e1 } = await sb
         .from("responses")
@@ -375,6 +290,7 @@
       STATE.assignments = asgMap;
     }
 
+    // ======== Auth UI ========
     function renderLogin() {
       elApp.innerHTML = `
         <div class="login-container">
@@ -399,11 +315,11 @@
         </div>
       `;
 
-      document.getElementById("btnLogin").onclick = login;
-      document.getElementById("showRegister").onclick = function(e) {
+      document.getElementById("btnLogin").addEventListener("click", login);
+      document.getElementById("showRegister").addEventListener("click", (e) => {
         e.preventDefault();
         renderRegister();
-      };
+      });
     }
 
     function renderRegister() {
@@ -435,11 +351,11 @@
         </div>
       `;
 
-      document.getElementById("btnRegister").onclick = register;
-      document.getElementById("showLogin").onclick = function(e) {
+      document.getElementById("btnRegister").addEventListener("click", register);
+      document.getElementById("showLogin").addEventListener("click", (e) => {
         e.preventDefault();
         renderLogin();
-      };
+      });
     }
 
     async function login() {
@@ -458,7 +374,6 @@
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("pass").value;
-
       if (!name || !email || !password) return toast("Bitte Name, E-Mail und Passwort eingeben.");
 
       const { data, error } = await sb.auth.signUp({ email, password });
@@ -468,7 +383,7 @@
         if (data.user && data.user.id) {
           await sb.from("profiles").update({ name }).eq("id", data.user.id);
         }
-      } catch (e) {}
+      } catch (_) {}
 
       toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
       await loadSession();
@@ -483,6 +398,7 @@
     }
     window.logout = logout;
 
+    // ======== Pending ========
     function renderPending() {
       elApp.innerHTML = `
         <div class="container">
@@ -490,18 +406,19 @@
             <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
             <p>${STATE.profile.email}</p>
           </div>
-
           <div class="section">
             <h2>Freischaltung erforderlich</h2>
             <p style="color: var(--text-light);">
               Dein Konto wurde angelegt, aber muss noch vom Admin freigeschaltet werden.
             </p>
-            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
           </div>
         </div>
       `;
+      document.getElementById("btnLogout").addEventListener("click", logout);
     }
 
+    // ======== Tech ========
     function techRoleLabel(p) {
       if (p.tech_role === "ton") return "🎤 Ton Techniker";
       if (p.tech_role === "video") return "📹 Video Techniker";
@@ -521,10 +438,11 @@
             </div>
             <div class="section">
               <p style="color:var(--text-light)">⏳ Admin hat noch keinen Plan erstellt.</p>
-              <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+              <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
             </div>
           </div>
         `;
+        document.getElementById("btnLogout").addEventListener("click", logout);
         return;
       }
 
@@ -537,9 +455,9 @@
             <td><strong>${fmtDateDE(date)}</strong></td>
             <td>
               <div class="color-row">
-                <div class="color-option color-red ${my === "red" ? "selected" : ""}" onclick="setAvailability('${date}','red')" title="Nicht verfügbar"></div>
-                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" onclick="setAvailability('${date}','yellow')" title="Eher nicht"></div>
-                <div class="color-option color-green ${my === "green" ? "selected" : ""}" onclick="setAvailability('${date}','green')" title="Verfügbar"></div>
+                <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" title="Nicht verfügbar"></div>
+                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" title="Eher nicht"></div>
+                <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" title="Verfügbar"></div>
               </div>
             </td>
           </tr>
@@ -573,7 +491,7 @@
               </tr>
               ${rows}
             </table>
-            <button class="btn btn-success" style="margin-top:20px;" onclick="saveAvailability()">💾 Verfügbarkeit speichern</button>
+            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail">💾 Verfügbarkeit speichern</button>
           </div>
 
           <div class="section">
@@ -582,27 +500,39 @@
           </div>
 
           <div class="section">
-            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
           </div>
         </div>
       `;
+
+      document.getElementById("btnLogout").addEventListener("click", logout);
+      document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
+
+      // click handler for color options
+      elApp.querySelectorAll(".color-option").forEach(el => {
+        el.addEventListener("click", () => {
+          const date = el.getAttribute("data-date");
+          const color = el.getAttribute("data-color");
+          setAvailability(date, color);
+        });
+      });
     }
 
-    window.setAvailability = function(date, color) {
+    function setAvailability(date, color) {
       if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
       STATE.responses[STATE.user.id][date] = color;
       renderTech();
-    };
+    }
 
-    window.saveAvailability = async function() {
+    async function saveAvailability() {
       if (!STATE.plan) return;
 
       const my = STATE.responses[STATE.user.id] || {};
       const rows = Object.entries(my).map(([sunday, response]) => ({
         plan_id: STATE.plan.id,
         tech_id: STATE.user.id,
-        sunday: sunday,
-        response: response
+        sunday,
+        response
       }));
 
       const { error } = await sb
@@ -614,89 +544,9 @@
       toast("✅ Gespeichert!");
       await fetchResponsesAndAssignments();
       renderTech();
-    };
-
-    function renderAdminPlan() {
-      const plan = STATE.plan;
-      const techs = STATE.technicians.filter(t => t.approved);
-
-      const tableHeader = techs.map(t =>
-        `<th>${(t.name || t.email)} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`
-      ).join("");
-
-      const rows = STATE.planSundays.map(date => {
-        const tds = techs.map(t => {
-          const resp = (STATE.responses[t.id] || {})[date];
-          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
-          return `<td class="response-cell">${emoji}</td>`;
-        }).join("");
-
-        return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
-      }).join("");
-
-      const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
-      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
-
-      const assignmentsOverview = STATE.planSundays.map(date => {
-        const ids = STATE.assignments[date] || [];
-        const names = ids.map(id => {
-          const t = techs.find(x => x.id === id);
-          return (t ? (t.name || t.email) : "?");
-        }).join(" + ");
-        return `
-          <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
-            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
-          </div>
-        `;
-      }).join("");
-
-      return `
-        <div class="section">
-          <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
-          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
-            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
-          </p>
-
-          <div class="plan-table">
-            <table>
-              <tr>
-                <th>Sonntag</th>
-                ${tableHeader}
-              </tr>
-              ${rows}
-            </table>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-success btn-small" onclick="autoAssign()">🤖 Auto-Zuweisung</button>
-            <button class="btn btn-danger btn-small" onclick="deletePlan()">🗑️ Plan löschen</button>
-            <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>🔧 Manuelle Anpassung</h3>
-          <div class="form-row three">
-            <select id="manualDate" onchange="updateManualList()">
-              <option value="">-- Sonntag wählen --</option>
-              ${manualSundayOptions}
-            </select>
-            <select id="manualTech">
-              <option value="">-- Techniker wählen --</option>
-              ${manualTechOptions}
-            </select>
-            <button class="btn btn-success btn-small" style="width:100%" onclick="manualAdd()">➕ Hinzufügen</button>
-          </div>
-          <div id="manualList"></div>
-        </div>
-
-        <div class="section">
-          <h3>✅ Zuweisungen Übersicht</h3>
-          ${assignmentsOverview}
-        </div>
-      `;
     }
 
+    // ======== Admin ========
     function renderAdmin() {
       const plan = STATE.plan;
 
@@ -705,7 +555,11 @@
           <div class="tech-info">
             <h4>${t.name || "(kein Name)"} ${t.approved ? "✅" : "⏳"}</h4>
             <p>
-              <span class="role-badge">${t.tech_role === "ton" ? "🎤 Ton" : t.tech_role === "video" ? "📹 Video" : t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"}</span>
+              <span class="role-badge">${
+                t.tech_role === "ton" ? "🎤 Ton" :
+                t.tech_role === "video" ? "📹 Video" :
+                t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"
+              }</span>
               ${t.email}
             </p>
             <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
@@ -713,8 +567,8 @@
             </p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="btn btn-success btn-small" onclick="approveUser('${t.id}', true)">Freigeben</button>
-            <button class="btn btn-danger btn-small" onclick="approveUser('${t.id}', false)">Sperren</button>
+            <button class="btn btn-success btn-small btn-approve" data-id="${t.id}" data-approved="true">Freigeben</button>
+            <button class="btn btn-danger btn-small btn-approve" data-id="${t.id}" data-approved="false">Sperren</button>
           </div>
         </div>
       `).join("");
@@ -746,9 +600,10 @@
                 <option value="both">🎤📹 Beides</option>
               </select>
             </div>
+
             <div class="button-group">
-              <button class="btn btn-primary btn-small" onclick="saveTechMeta()">💾 Name/Rolle speichern</button>
-              <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
+              <button class="btn btn-primary btn-small" id="btnSaveMeta">💾 Name/Rolle speichern</button>
+              <button class="btn btn-primary btn-small" id="btnRefresh">🔄 Aktualisieren</button>
             </div>
 
             <div style="margin-top:18px;max-height:360px;overflow:auto;">
@@ -762,7 +617,7 @@
               <input id="planStart" type="date">
               <input id="planWeeks" type="number" value="4" min="1" max="12">
             </div>
-            <button class="btn btn-primary" onclick="createPlan()">📅 Plan erstellen</button>
+            <button class="btn btn-primary" id="btnCreatePlan">📅 Plan erstellen</button>
           </div>
 
           ${plan ? renderAdminPlan() : `
@@ -773,28 +628,128 @@
           `}
 
           <div class="section">
-            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
           </div>
         </div>
       `;
 
-      if (plan) updateManualList();
+      document.getElementById("btnLogout").addEventListener("click", logout);
+      document.getElementById("btnRefresh").addEventListener("click", refreshAdmin);
+      document.getElementById("btnSaveMeta").addEventListener("click", saveTechMeta);
+      document.getElementById("btnCreatePlan").addEventListener("click", createPlan);
+
+      elApp.querySelectorAll(".btn-approve").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          const approved = btn.getAttribute("data-approved") === "true";
+          await approveUser(id, approved);
+        });
+      });
+
+      if (plan) wireAdminPlanHandlers();
     }
 
-    window.refreshAdmin = async function() {
+    function renderAdminPlan() {
+      const plan = STATE.plan;
+      const techs = STATE.technicians.filter(t => t.approved);
+
+      const tableHeader = techs.map(t =>
+        `<th>${(t.name || t.email)} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`
+      ).join("");
+
+      const rows = STATE.planSundays.map(date => {
+        const tds = techs.map(t => {
+          const resp = (STATE.responses[t.id] || {})[date];
+          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
+          return `<td class="response-cell">${emoji}</td>`;
+        }).join("");
+        return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
+      }).join("");
+
+      const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
+      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
+
+      const assignmentsOverview = STATE.planSundays.map(date => {
+        const ids = STATE.assignments[date] || [];
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return (t ? (t.name || t.email) : "?");
+        }).join(" + ");
+        return `
+          <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
+            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="section" id="adminPlanSection">
+          <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+          </p>
+
+          <div class="plan-table">
+            <table>
+              <tr>
+                <th>Sonntag</th>
+                ${tableHeader}
+              </tr>
+              ${rows}
+            </table>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
+            <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>🔧 Manuelle Anpassung</h3>
+          <div class="form-row three">
+            <select id="manualDate">
+              <option value="">-- Sonntag wählen --</option>
+              ${manualSundayOptions}
+            </select>
+            <select id="manualTech">
+              <option value="">-- Techniker wählen --</option>
+              ${manualTechOptions}
+            </select>
+            <button class="btn btn-success btn-small" style="width:100%" id="btnManualAdd">➕ Hinzufügen</button>
+          </div>
+          <div id="manualList"></div>
+        </div>
+
+        <div class="section">
+          <h3>✅ Zuweisungen Übersicht</h3>
+          ${assignmentsOverview}
+        </div>
+      `;
+    }
+
+    function wireAdminPlanHandlers() {
+      document.getElementById("btnAutoAssign")?.addEventListener("click", autoAssign);
+      document.getElementById("btnDeletePlan")?.addEventListener("click", deletePlan);
+      document.getElementById("btnManualAdd")?.addEventListener("click", manualAdd);
+      document.getElementById("manualDate")?.addEventListener("change", updateManualList);
+      updateManualList();
+    }
+
+    async function refreshAdmin() {
       await fetchTechnicians();
       await fetchCurrentPlan();
       await fetchResponsesAndAssignments();
       renderAdmin();
-    };
+    }
 
-    window.approveUser = async function(id, approved) {
-      const { error } = await sb.from("profiles").update({ approved: approved }).eq("id", id);
+    async function approveUser(id, approved) {
+      const { error } = await sb.from("profiles").update({ approved }).eq("id", id);
       if (error) return toast("Fehler: " + error.message);
       await refreshAdmin();
-    };
+    }
 
-    window.saveTechMeta = async function() {
+    async function saveTechMeta() {
       const id = document.getElementById("selTech").value;
       const name = document.getElementById("inpName").value.trim();
       const tech_role = document.getElementById("selTechRole").value;
@@ -812,16 +767,15 @@
 
       await refreshAdmin();
       toast("✅ Gespeichert.");
-    };
+    }
 
-    window.createPlan = async function() {
+    async function createPlan() {
       const startStr = document.getElementById("planStart").value;
       const weeks = parseInt(document.getElementById("planWeeks").value, 10);
-
       if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
 
       let current = new Date(startStr + "T12:00:00");
-      let day = current.getDay();
+      const day = current.getDay();
       if (day !== 0) current.setDate(current.getDate() + (7 - day));
 
       const sundays = [];
@@ -846,9 +800,9 @@
 
       toast("✅ Plan erstellt.");
       await refreshAdmin();
-    };
+    }
 
-    window.deletePlan = async function() {
+    async function deletePlan() {
       if (!STATE.plan) return;
       if (!confirm("Plan wirklich löschen?")) return;
 
@@ -857,10 +811,10 @@
 
       toast("✅ Plan gelöscht.");
       await refreshAdmin();
-    };
+    }
 
-    window.updateManualList = function() {
-      const date = document.getElementById("manualDate") ? document.getElementById("manualDate").value : "";
+    function updateManualList() {
+      const date = document.getElementById("manualDate")?.value;
       const box = document.getElementById("manualList");
       if (!box) return;
 
@@ -869,8 +823,8 @@
         return;
       }
 
-      const ids = STATE.assignments[date] || [];
       const techs = STATE.technicians.filter(t => t.approved);
+      const ids = STATE.assignments[date] || [];
 
       if (ids.length === 0) {
         box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Noch niemand zugewiesen.</p>';
@@ -878,28 +832,34 @@
       }
 
       box.innerHTML = `
-        <div style="margin-top: 10px;">
+        <div style="margin-top:10px;">
           ${ids.map(id => {
             const t = techs.find(x => x.id === id);
             if (!t) return "";
-            return '<span class="tech-badge">' + (t.name || t.email) +
-              '<span class="remove" onclick="manualRemove(\\'' + date + '\\',\\'' + id + '\\')">✕</span></span>';
+            return `<span class="tech-badge">${t.name || t.email}<span class="remove" data-date="${date}" data-id="${id}">✕</span></span>`;
           }).join("")}
         </div>
       `;
-    };
 
-    window.manualAdd = async function() {
-      const date = document.getElementById("manualDate") ? document.getElementById("manualDate").value : "";
-      const techId = document.getElementById("manualTech") ? document.getElementById("manualTech").value : "";
+      box.querySelectorAll(".remove").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const d = btn.getAttribute("data-date");
+          const id = btn.getAttribute("data-id");
+          await manualRemove(d, id);
+        });
+      });
+    }
+
+    async function manualAdd() {
+      const date = document.getElementById("manualDate")?.value;
+      const techId = document.getElementById("manualTech")?.value;
       if (!STATE.plan) return;
-
       if (!date || !techId) return toast("Sonntag und Techniker wählen.");
 
       const existing = STATE.assignments[date] || [];
       if (existing.includes(techId)) return toast("Techniker ist schon zugewiesen.");
 
-      const newIds = existing.concat([techId]);
+      const newIds = [...existing, techId];
 
       const { error } = await sb
         .from("assignments")
@@ -909,9 +869,9 @@
 
       await fetchResponsesAndAssignments();
       renderAdmin();
-    };
+    }
 
-    window.manualRemove = async function(date, techId) {
+    async function manualRemove(date, techId) {
       if (!STATE.plan) return;
 
       const existing = STATE.assignments[date] || [];
@@ -933,21 +893,18 @@
 
       await fetchResponsesAndAssignments();
       renderAdmin();
-    };
+    }
 
-    window.autoAssign = async function() {
+    async function autoAssign() {
       if (!STATE.plan) return;
 
       const techs = STATE.technicians.filter(t => t.approved);
 
-      for (let i = 0; i < STATE.planSundays.length; i++) {
-        const date = STATE.planSundays[i];
-
+      for (const date of STATE.planSundays) {
         const tons = techs.filter(t => {
           const r = (STATE.responses[t.id] || {})[date];
           return (r === "green" || r === "yellow") && (t.tech_role === "ton" || t.tech_role === "both");
         });
-
         const videos = techs.filter(t => {
           const r = (STATE.responses[t.id] || {})[date];
           return (r === "green" || r === "yellow") && (t.tech_role === "video" || t.tech_role === "both");
@@ -955,7 +912,7 @@
 
         const team = [];
         if (tons.length) team.push(tons[0].id);
-        if (videos.length && team.indexOf(videos[0].id) === -1) team.push(videos[0].id);
+        if (videos.length && !team.includes(videos[0].id)) team.push(videos[0].id);
 
         if (team.length) {
           const { error } = await sb
@@ -968,8 +925,9 @@
       toast("✅ Auto-Zuweisung fertig.");
       await fetchResponsesAndAssignments();
       renderAdmin();
-    };
+    }
 
+    // ======== Router ========
     async function route() {
       await loadSession();
       if (!STATE.user) return renderLogin();
@@ -986,11 +944,12 @@
                 Prüfe Trigger <code>handle_new_user()</code>.
               </p>
               <div style="margin-top: 12px;">
-                <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+                <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
               </div>
             </div>
           </div>
         `;
+        document.getElementById("btnLogout").addEventListener("click", logout);
         return;
       }
 
@@ -1010,7 +969,7 @@
 
     // Start & session change
     route();
-    sb.auth.onAuthStateChange(function() { route(); });
+    sb.auth.onAuthStateChange(() => { route(); });
   </script>
 </body>
 </html>
