@@ -564,10 +564,9 @@
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
                     
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
-                        <strong>💡 Neue Benutzer:</strong><br>
-                        Nutze deine E-Mail und ein beliebiges Passwort zum Erstellen!
+                        <strong>🔐 Erste Anmeldung?</strong><br>
+                        Nutze deine E-Mail und ein beliebiges Passwort!
                     </p>
-</parameter>
                 </div>
             `;
         }
@@ -731,17 +730,9 @@
 
                     ${planContent}
 
-                    ${plan ? `
-                        <div class="section">
-                            <h3>🗑️ Plan verwalten</h3>
-                            <button class="btn btn-danger" onclick="deletePlan()">Plan löschen</button>
-                        </div>
-                    ` : ''}
-
                     <div class="section">
                         <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
                     </div>
-</parameter>
                 </div>
             `;
         }
@@ -961,21 +952,6 @@
 
             renderAdmin();
         }
-
-        // ===== DELETE PLAN =====
-        function deletePlan() {
-            if (!APP.currentPlan) return;
-
-            if (confirm('⚠️ Wirklich löschen?\n\nDieser Plan wird komplett gelöscht:\n- Alle Verfügbarkeitseintragungen\n- Alle Team-Zuweisungen\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) {
-                APP.currentPlan = null;
-                APP.responses = {};
-                APP.assignments = {};
-                saveData();
-                renderAdmin();
-                alert('✅ Plan gelöscht!');
-            }
-        }
-</parameter>
 
         // ===== LOGOUT =====
         function logout() {
