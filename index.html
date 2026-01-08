@@ -5,805 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>🔧 CGH Technik Planer</title>
 
-  <!-- Supabase JS (ESM) -->
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-    // ====== SUPABASE CONFIG (DEINE DATEN) ======
-    const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
-
-    // ====== APP GLOBALS ======
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    const elApp = document.getElementById("app");
-
-    // Anti white screen: Fehler sichtbar machen
-    window.onerror = function (message, source, lineno, colno) {
-      if (!elApp) return false;
-      elApp.innerHTML = `
-        <div class="fatal">
-          <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler in der App</h2>
-          <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
-          <pre>${String(message)}\n${String(source)}:${lineno}:${colno}</pre>
-        </div>
-      `;
-      return true;
-    };
-
-    // ====== STATE ======
-    const STATE = {
-      user: null,
-      profile: null,
-      plan: null,
-      planSundays: [],
-      technicians: [], // profiles(role=tech)
-      responses: {},   // tech_id -> { sunday: response }
-      assignments: {}  // sunday -> uuid[]
-    };
-
-    // ====== HELPERS ======
-    const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
-
-    function toast(msg) { alert(msg); }
-
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
-      STATE.user = data.session?.user || null;
-    }
-
-    async function fetchMyProfile() {
-      if (!STATE.user) return null;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,email,name,role,approved,tech_role")
-        .eq("id", STATE.user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      STATE.profile = data || null;
-      return STATE.profile;
-    }
-
-    async function fetchCurrentPlan() {
-      // Einfachheit: "aktiver Plan" = neuester Plan
-      const { data, error } = await supabase
-        .from("plans")
-        .select("id,status,created_at,created_by")
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-      STATE.plan = (data && data.length) ? data[0] : null;
-
-      if (!STATE.plan) {
-        STATE.planSundays = [];
-        return null;
-      }
-
-      const { data: sundays, error: e2 } = await supabase
-        .from("plan_sundays")
-        .select("sunday")
-        .eq("plan_id", STATE.plan.id)
-        .order("sunday", { ascending: true });
-
-      if (e2) throw e2;
-      STATE.planSundays = (sundays || []).map(x => x.sunday);
-      return STATE.plan;
-    }
-
-    async function fetchTechnicians() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,email,name,role,approved,tech_role")
-        .eq("role", "tech")
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      STATE.technicians = data || [];
-      return STATE.technicians;
-    }
-
-    async function fetchResponsesAndAssignments() {
-      if (!STATE.plan) {
-        STATE.responses = {};
-        STATE.assignments = {};
-        return;
-      }
-
-      const { data: resp, error: e1 } = await supabase
-        .from("responses")
-        .select("tech_id,sunday,response")
-        .eq("plan_id", STATE.plan.id);
-
-      if (e1) throw e1;
-
-      const respMap = {};
-      (resp || []).forEach(r => {
-        if (!respMap[r.tech_id]) respMap[r.tech_id] = {};
-        respMap[r.tech_id][r.sunday] = r.response;
-      });
-      STATE.responses = respMap;
-
-      const { data: asg, error: e2 } = await supabase
-        .from("assignments")
-        .select("sunday,tech_ids")
-        .eq("plan_id", STATE.plan.id);
-
-      if (e2) throw e2;
-
-      const asgMap = {};
-      (asg || []).forEach(a => { asgMap[a.sunday] = a.tech_ids || []; });
-      STATE.assignments = asgMap;
-    }
-
-    // ====== AUTH UI ======
-    function renderLogin() {
-      elApp.innerHTML = `
-        <div class="login-container">
-          <h1>🔧 CGH Technik</h1>
-          <p>Professionelle Planung für dein Technik-Team</p>
-
-          <div class="form-group">
-            <label>E-Mail Adresse</label>
-            <input type="email" id="email" placeholder="deine@email.de">
-          </div>
-
-          <div class="form-group">
-            <label>Passwort</label>
-            <input type="password" id="pass" placeholder="Dein Passwort">
-          </div>
-
-          <button class="btn btn-primary" id="btnLogin">🚀 Anmelden</button>
-
-          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
-            Noch kein Konto? <a href="#" id="showRegister">Jetzt registrieren</a>
-          </p>
-        </div>
-      `;
-
-      document.getElementById("btnLogin").onclick = login;
-      document.getElementById("showRegister").onclick = (e) => {
-        e.preventDefault();
-        renderRegister();
-      };
-    }
-
-    function renderRegister() {
-      elApp.innerHTML = `
-        <div class="login-container">
-          <h1>📝 Registrierung</h1>
-          <p>Nach der Registrierung muss dich der Admin freischalten.</p>
-
-          <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="name" placeholder="Vorname Nachname">
-          </div>
-
-          <div class="form-group">
-            <label>E-Mail Adresse</label>
-            <input type="email" id="email" placeholder="deine@email.de">
-          </div>
-
-          <div class="form-group">
-            <label>Passwort</label>
-            <input type="password" id="pass" placeholder="Mind. 8 Zeichen">
-          </div>
-
-          <button class="btn btn-primary" id="btnRegister">✅ Registrieren</button>
-
-          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
-            Schon ein Konto? <a href="#" id="showLogin">Zum Login</a>
-          </p>
-        </div>
-      `;
-
-      document.getElementById("btnRegister").onclick = register;
-      document.getElementById("showLogin").onclick = (e) => {
-        e.preventDefault();
-        renderLogin();
-      };
-    }
-
-    async function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("pass").value;
-
-      if (!email || !password) return toast("Bitte E-Mail und Passwort eingeben.");
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return toast("Login fehlgeschlagen: " + error.message);
-
-      STATE.user = data.user;
-      await route();
-    }
-
-    async function register() {
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("pass").value;
-
-      if (!name || !email || !password) return toast("Bitte Name, E-Mail und Passwort eingeben.");
-
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) return toast("Registrierung fehlgeschlagen: " + error.message);
-
-      // Optional: Name sofort in profiles schreiben (geht nur wenn profiles row existiert + Policy passt)
-      // Wir versuchen es, wenn es nicht geht, ist es nicht schlimm – Admin kann Name setzen.
-      try {
-        if (data.user?.id) {
-          await supabase.from("profiles").update({ name }).eq("id", data.user.id);
-        }
-      } catch (_) {}
-
-      toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
-      // Viele Setups loggen nach signUp automatisch ein; wir leiten trotzdem weiter.
-      await loadSession();
-      await route();
-    }
-
-    async function logout() {
-      await supabase.auth.signOut();
-      STATE.user = null;
-      STATE.profile = null;
-      renderLogin();
-    }
-
-    // ====== ROUTER ======
-    async function route() {
-      await loadSession();
-      if (!STATE.user) return renderLogin();
-
-      await fetchMyProfile();
-
-      if (!STATE.profile) {
-        // Trigger/Profiles fehlt -> Hinweis
-        elApp.innerHTML = `
-          <div class="container">
-            <div class="fatal">
-              <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
-              <p style="margin:0;color:var(--text-light)">
-                Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
-                Prüfe Trigger <code>handle_new_user()</code>.
-              </p>
-              <div style="margin-top: 12px;">
-                <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-              </div>
-            </div>
-          </div>
-        `;
-        document.getElementById("btnLogout").onclick = logout;
-        return;
-      }
-
-      if (STATE.profile.role === "admin") {
-        await fetchTechnicians();
-        await fetchCurrentPlan();
-        await fetchResponsesAndAssignments();
-        return renderAdmin();
-      }
-
-      // tech
-      if (!STATE.profile.approved) {
-        return renderPending();
-      }
-
-      await fetchCurrentPlan();
-      await fetchResponsesAndAssignments();
-      return renderTech();
-    }
-
-    function renderPending() {
-      elApp.innerHTML = `
-        <div class="container">
-          <div class="header header-user">
-            <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
-            <p>${STATE.profile.email}</p>
-          </div>
-
-          <div class="section">
-            <h2>Freischaltung erforderlich</h2>
-            <p style="color: var(--text-light);">
-              Dein Konto wurde angelegt, aber muss noch vom Admin freigeschaltet werden.
-            </p>
-            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-          </div>
-        </div>
-      `;
-      document.getElementById("btnLogout").onclick = logout;
-    }
-
-    // ====== ADMIN UI ======
-    function renderAdmin() {
-      const plan = STATE.plan;
-
-      const emailNotice = `
-        <div class="info-box">
-          <p>✅ Angemeldet als <strong>${STATE.profile.email}</strong> (Admin)</p>
-        </div>
-      `;
-
-      const techCards = STATE.technicians.map(t => `
-        <div class="tech-card">
-          <div class="tech-info">
-            <h4>${t.name || "(kein Name)"} ${t.approved ? "✅" : "⏳"}</h4>
-            <p>
-              <span class="role-badge">${t.tech_role === "ton" ? "🎤 Ton" : t.tech_role === "video" ? "📹 Video" : t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"}</span>
-              ${t.email}
-            </p>
-            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
-              Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}
-            </p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-            <button class="btn btn-success btn-small" onclick="approveUser('${t.id}', true)">Freigeben</button>
-            <button class="btn btn-danger btn-small" onclick="approveUser('${t.id}', false)">Sperren</button>
-          </div>
-        </div>
-      `).join("");
-
-      const planSection = plan ? renderAdminPlan() : `
-        <div class="section">
-          <h3>📅 Kein Plan vorhanden</h3>
-          <p style="color:var(--text-light)">Erstelle unten einen neuen Plan.</p>
-        </div>
-      `;
-
-      elApp.innerHTML = `
-        <div class="container">
-          <div class="header header-admin">
-            <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
-            <p>${STATE.profile.email}</p>
-          </div>
-
-          ${emailNotice}
-
-          <div class="section">
-            <h3>👥 Freischaltung & Rollen</h3>
-
-            <div class="form-row three">
-              <select id="selTech">
-                <option value="">-- Techniker wählen --</option>
-                ${STATE.technicians.map(t => `<option value="${t.id}">${t.email}</option>`).join("")}
-              </select>
-              <input id="inpName" type="text" placeholder="Name setzen (optional)">
-              <select id="selTechRole">
-                <option value="">-- Technik Rolle --</option>
-                <option value="ton">🎤 Ton</option>
-                <option value="video">📹 Video</option>
-                <option value="both">🎤📹 Beides</option>
-              </select>
-            </div>
-            <div class="button-group">
-              <button class="btn btn-primary btn-small" onclick="saveTechMeta()">💾 Name/Rolle speichern</button>
-              <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
-            </div>
-
-            <div style="margin-top:18px;max-height:360px;overflow:auto;">
-              ${techCards || '<p style="color:var(--text-light)">Noch keine Techniker registriert.</p>'}
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>🆕 Neuen Plan erstellen</h3>
-            <div class="form-row">
-              <input id="planStart" type="date">
-              <input id="planWeeks" type="number" value="4" min="1" max="12">
-            </div>
-            <button class="btn btn-primary" onclick="createPlan()">📅 Plan erstellen</button>
-          </div>
-
-          ${planSection}
-
-          <div class="section">
-            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderAdminPlan() {
-      const plan = STATE.plan;
-      const techs = STATE.technicians.filter(t => t.approved); // nur freigeschaltete im Plan anzeigen
-
-      const tableHeader = techs.map(t => `<th>${t.name || t.email} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`).join("");
-
-      const rows = STATE.planSundays.map(date => {
-        const tds = techs.map(t => {
-          const resp = STATE.responses[t.id]?.[date];
-          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
-          return `<td class="response-cell">${emoji}</td>`;
-        }).join("");
-        return `
-          <tr>
-            <td class="date-cell">${fmtDateDE(date)}</td>
-            ${tds}
-          </tr>
-        `;
-      }).join("");
-
-      const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
-      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
-
-      const assignmentsOverview = STATE.planSundays.map(date => {
-        const ids = STATE.assignments[date] || [];
-        const names = ids.map(id => techs.find(t => t.id === id)?.name || techs.find(t => t.id === id)?.email || "?").join(" + ");
-        return `
-          <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
-            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
-          </div>
-        `;
-      }).join("");
-
-      return `
-        <div class="section">
-          <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
-          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
-            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
-          </p>
-
-          <div class="plan-table">
-            <table>
-              <tr>
-                <th>Sonntag</th>
-                ${tableHeader}
-              </tr>
-              ${rows}
-            </table>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-success btn-small" onclick="autoAssign()">🤖 Auto-Zuweisung</button>
-            <button class="btn btn-danger btn-small" onclick="deletePlan()">🗑️ Plan löschen</button>
-            <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>🔧 Manuelle Anpassung</h3>
-          <div class="form-row three">
-            <select id="manualDate" onchange="updateManualList()">
-              <option value="">-- Sonntag wählen --</option>
-              ${manualSundayOptions}
-            </select>
-            <select id="manualTech">
-              <option value="">-- Techniker wählen --</option>
-              ${manualTechOptions}
-            </select>
-            <button class="btn btn-success btn-small" style="width:100%" onclick="manualAdd()">➕ Hinzufügen</button>
-          </div>
-          <div id="manualList"></div>
-        </div>
-
-        <div class="section">
-          <h3>✅ Zuweisungen Übersicht</h3>
-          ${assignmentsOverview}
-        </div>
-      `;
-    }
-
-    // ====== ADMIN ACTIONS ======
-    window.refreshAdmin = async function () {
-      await fetchTechnicians();
-      await fetchCurrentPlan();
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    };
-
-    window.approveUser = async function (id, approved) {
-      const { error } = await supabase.from("profiles").update({ approved }).eq("id", id);
-      if (error) return toast("Fehler: " + error.message);
-      await refreshAdmin();
-    };
-
-    window.saveTechMeta = async function () {
-      const id = document.getElementById("selTech").value;
-      const name = document.getElementById("inpName").value.trim();
-      const tech_role = document.getElementById("selTechRole").value;
-
-      if (!id) return toast("Bitte Techniker wählen.");
-      const payload = {};
-      if (name) payload.name = name;
-      if (tech_role) payload.tech_role = tech_role;
-
-      if (Object.keys(payload).length === 0) return toast("Nichts zu speichern.");
-
-      const { error } = await supabase.from("profiles").update(payload).eq("id", id);
-      if (error) return toast("Fehler: " + error.message);
-
-      await refreshAdmin();
-      toast("✅ Gespeichert.");
-    };
-
-    window.createPlan = async function () {
-      const startStr = document.getElementById("planStart").value;
-      const weeks = parseInt(document.getElementById("planWeeks").value, 10);
-
-      if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
-
-      // Sonntage berechnen (lokal, stabil)
-      let current = new Date(startStr + "T12:00:00");
-      let day = current.getDay(); // 0=Sonntag
-      if (day !== 0) current.setDate(current.getDate() + (7 - day));
-
-      const sundays = [];
-      for (let i = 0; i < weeks; i++) {
-        const y = current.getFullYear();
-        const m = String(current.getMonth() + 1).padStart(2, "0");
-        const d = String(current.getDate()).padStart(2, "0");
-        sundays.push(`${y}-${m}-${d}`);
-        current.setDate(current.getDate() + 7);
-      }
-
-      // Neuen Plan anlegen
-      const { data: plan, error: e1 } = await supabase
-        .from("plans")
-        .insert([{ status: "responses_pending", created_by: STATE.user.id }])
-        .select("id,status,created_at,created_by")
-        .single();
-
-      if (e1) return toast("Plan Fehler: " + e1.message);
-
-      // Sonntage einfügen
-      const rows = sundays.map(s => ({ plan_id: plan.id, sunday: s }));
-      const { error: e2 } = await supabase.from("plan_sundays").insert(rows);
-      if (e2) return toast("Sonntage Fehler: " + e2.message);
-
-      toast("✅ Plan erstellt.");
-      await refreshAdmin();
-    };
-
-    window.deletePlan = async function () {
-      if (!STATE.plan) return;
-      if (!confirm("Plan wirklich löschen?")) return;
-      const { error } = await supabase.from("plans").delete().eq("id", STATE.plan.id);
-      if (error) return toast("Fehler: " + error.message);
-      toast("✅ Plan gelöscht.");
-      await refreshAdmin();
-    };
-
-    window.updateManualList = async function () {
-      const date = document.getElementById("manualDate")?.value;
-      const box = document.getElementById("manualList");
-      if (!box) return;
-
-      if (!date) {
-        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Bitte zuerst einen Sonntag auswählen.</p>';
-        return;
-      }
-
-      const ids = STATE.assignments[date] || [];
-      const techs = STATE.technicians.filter(t => t.approved);
-
-      if (ids.length === 0) {
-        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Noch niemand zugewiesen.</p>';
-        return;
-      }
-
-      box.innerHTML = `
-        <div style="margin-top: 10px;">
-          ${ids.map(id => {
-            const t = techs.find(x => x.id === id);
-            if (!t) return "";
-            return `<span class="tech-badge">${t.name || t.email}<span class="remove" onclick="manualRemove('${date}','${id}')">✕</span></span>`;
-          }).join("")}
-        </div>
-      `;
-    };
-
-    window.manualAdd = async function () {
-      const date = document.getElementById("manualDate")?.value;
-      const techId = document.getElementById("manualTech")?.value;
-      if (!STATE.plan) return;
-
-      if (!date || !techId) return toast("Sonntag und Techniker wählen.");
-
-      const existing = STATE.assignments[date] || [];
-      if (existing.includes(techId)) return toast("Techniker ist schon zugewiesen.");
-
-      const newIds = [...existing, techId];
-
-      // upsert assignment row
-      const { error } = await supabase
-        .from("assignments")
-        .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
-
-      if (error) return toast("Fehler: " + error.message);
-
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    };
-
-    window.manualRemove = async function (date, techId) {
-      if (!STATE.plan) return;
-
-      const existing = STATE.assignments[date] || [];
-      const newIds = existing.filter(x => x !== techId);
-
-      if (newIds.length === 0) {
-        const { error } = await supabase
-          .from("assignments")
-          .delete()
-          .eq("plan_id", STATE.plan.id)
-          .eq("sunday", date);
-        if (error) return toast("Fehler: " + error.message);
-      } else {
-        const { error } = await supabase
-          .from("assignments")
-          .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
-        if (error) return toast("Fehler: " + error.message);
-      }
-
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    };
-
-    window.autoAssign = async function () {
-      if (!STATE.plan) return;
-
-      const techs = STATE.technicians.filter(t => t.approved);
-
-      for (const date of STATE.planSundays) {
-        const tons = techs.filter(t =>
-          (STATE.responses[t.id]?.[date] === "green" || STATE.responses[t.id]?.[date] === "yellow") &&
-          (t.tech_role === "ton" || t.tech_role === "both")
-        );
-        const videos = techs.filter(t =>
-          (STATE.responses[t.id]?.[date] === "green" || STATE.responses[t.id]?.[date] === "yellow") &&
-          (t.tech_role === "video" || t.tech_role === "both")
-        );
-
-        const team = [];
-        if (tons.length) team.push(tons[0].id);
-        if (videos.length && !team.includes(videos[0].id)) team.push(videos[0].id);
-
-        if (team.length) {
-          const { error } = await supabase
-            .from("assignments")
-            .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: team }], { onConflict: "plan_id,sunday" });
-          if (error) return toast("Fehler Auto-Zuweisung: " + error.message);
-        }
-      }
-
-      toast("✅ Auto-Zuweisung fertig.");
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    };
-
-    // ====== TECH UI ======
-    function renderTech() {
-      const techRoleLabel =
-        STATE.profile.tech_role === "ton" ? "🎤 Ton Techniker" :
-        STATE.profile.tech_role === "video" ? "📹 Video Techniker" :
-        STATE.profile.tech_role === "both" ? "🎤📹 Allrounder" : "Techniker";
-
-      if (!STATE.plan) {
-        elApp.innerHTML = `
-          <div class="container">
-            <div class="header header-user">
-              <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-              <p>${techRoleLabel}</p>
-            </div>
-            <div class="section">
-              <p style="color:var(--text-light)">⏳ Admin hat noch keinen Plan erstellt.</p>
-              <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      const myResponses = STATE.responses[STATE.user.id] || {};
-
-      const rows = STATE.planSundays.map(date => {
-        const my = myResponses[date] || "";
-        return `
-          <tr>
-            <td><strong>${fmtDateDE(date)}</strong></td>
-            <td>
-              <div class="color-row">
-                <div class="color-option color-red ${my === "red" ? "selected" : ""}" onclick="setAvailability('${date}','red')" title="Nicht verfügbar"></div>
-                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" onclick="setAvailability('${date}','yellow')" title="Eher nicht"></div>
-                <div class="color-option color-green ${my === "green" ? "selected" : ""}" onclick="setAvailability('${date}','green')" title="Verfügbar"></div>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-
-      // Termine
-      const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-      const assignedHtml = myAssigned.length
-        ? myAssigned.map(d => `<div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
-              <strong>📍 ${fmtDateDE(d)}</strong>
-            </div>`).join("")
-        : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
-
-      elApp.innerHTML = `
-        <div class="container">
-          <div class="header header-user">
-            <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-            <p>${techRoleLabel}</p>
-          </div>
-
-          <div class="info-box">
-            <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
-          </div>
-
-          <div class="section">
-            <h2>📅 Deine Verfügbarkeit</h2>
-            <table>
-              <tr>
-                <th style="width:40%">Sonntag</th>
-                <th style="width:60%;text-align:center;">Deine Verfügbarkeit</th>
-              </tr>
-              ${rows}
-            </table>
-            <button class="btn btn-success" style="margin-top:20px;" onclick="saveAvailability()">💾 Verfügbarkeit speichern</button>
-          </div>
-
-          <div class="section">
-            <h2>✅ Deine zugewiesenen Termine</h2>
-            ${assignedHtml}
-          </div>
-
-          <div class="section">
-            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
-          </div>
-        </div>
-      `;
-    }
-
-    // Tech actions
-    window.setAvailability = function (date, color) {
-      if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-      STATE.responses[STATE.user.id][date] = color;
-      renderTech();
-    };
-
-    window.saveAvailability = async function () {
-      if (!STATE.plan) return;
-
-      const my = STATE.responses[STATE.user.id] || {};
-      const rows = Object.entries(my).map(([sunday, response]) => ({
-        plan_id: STATE.plan.id,
-        tech_id: STATE.user.id,
-        sunday,
-        response
-      }));
-
-      // Upsert pro (plan_id, tech_id, sunday)
-      const { error } = await supabase
-        .from("responses")
-        .upsert(rows, { onConflict: "plan_id,tech_id,sunday" });
-
-      if (error) return toast("Fehler: " + error.message);
-
-      toast("✅ Gespeichert!");
-      await fetchResponsesAndAssignments();
-      renderTech();
-    };
-
-    // ====== INITIAL LOAD ======
-    // Zusatz: tech_role Feld in profiles (falls noch nicht existiert)
-    // Nicht kritisch, aber hilfreich:
-    async function ensureTechRoleColumnExists() {
-      // kann man hier nicht per SQL machen; nur Hinweis in UI ist ok
-    }
-
-    // Expose logout globally for onclick in HTML
-    window.logout = logout;
-
-    // Start
-    route();
-
-    // Session changes -> re-route
-    supabase.auth.onAuthStateChange(async () => {
-      await route();
-    });
-
-    // NOTE: approveUser/saveTechMeta/etc. sind window.* Funktionen (siehe oben)
-  </script>
+  <!-- Supabase JS via CDN (Opera-safe, no ESM import) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -832,11 +35,7 @@
       line-height: 1.6;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
     .login-container {
       max-width: 420px;
@@ -856,10 +55,7 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .login-container p {
-      color: var(--text-light);
-      margin-bottom: 20px;
-    }
+    .login-container p { color: var(--text-light); margin-bottom: 20px; }
 
     .form-group { margin-bottom: 20px; text-align: left; }
     label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
@@ -1057,5 +253,763 @@
 </head>
 <body>
   <div id="app"></div>
+
+  <script>
+    // ====== CONFIG ======
+    const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
+
+    // Supabase global object comes from CDN script
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const elApp = document.getElementById("app");
+
+    window.onerror = function(message, source, lineno, colno) {
+      if (!elApp) return false;
+      elApp.innerHTML = `
+        <div class="fatal">
+          <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler in der App</h2>
+          <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+          <pre>${String(message)}\n${String(source)}:${lineno}:${colno}</pre>
+        </div>
+      `;
+      return true;
+    };
+
+    const STATE = {
+      user: null,
+      profile: null,
+      plan: null,
+      planSundays: [],
+      technicians: [],
+      responses: {},
+      assignments: {}
+    };
+
+    const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
+    const toast = (msg) => alert(msg);
+
+    async function loadSession() {
+      const { data } = await sb.auth.getSession();
+      STATE.user = data.session?.user || null;
+    }
+
+    async function fetchMyProfile() {
+      if (!STATE.user) return null;
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,email,name,role,approved,tech_role,created_at")
+        .eq("id", STATE.user.id)
+        .maybeSingle();
+      if (error) throw error;
+      STATE.profile = data || null;
+      return STATE.profile;
+    }
+
+    async function fetchCurrentPlan() {
+      const { data, error } = await sb
+        .from("plans")
+        .select("id,status,created_at,created_by")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+
+      STATE.plan = (data && data.length) ? data[0] : null;
+      if (!STATE.plan) {
+        STATE.planSundays = [];
+        return null;
+      }
+
+      const { data: sundays, error: e2 } = await sb
+        .from("plan_sundays")
+        .select("sunday")
+        .eq("plan_id", STATE.plan.id)
+        .order("sunday", { ascending: true });
+      if (e2) throw e2;
+
+      STATE.planSundays = (sundays || []).map(x => x.sunday);
+      return STATE.plan;
+    }
+
+    async function fetchTechnicians() {
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,email,name,role,approved,tech_role,created_at")
+        .eq("role", "tech")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      STATE.technicians = data || [];
+      return STATE.technicians;
+    }
+
+    async function fetchResponsesAndAssignments() {
+      if (!STATE.plan) {
+        STATE.responses = {};
+        STATE.assignments = {};
+        return;
+      }
+
+      const { data: resp, error: e1 } = await sb
+        .from("responses")
+        .select("tech_id,sunday,response")
+        .eq("plan_id", STATE.plan.id);
+      if (e1) throw e1;
+
+      const respMap = {};
+      (resp || []).forEach(r => {
+        if (!respMap[r.tech_id]) respMap[r.tech_id] = {};
+        respMap[r.tech_id][r.sunday] = r.response;
+      });
+      STATE.responses = respMap;
+
+      const { data: asg, error: e2 } = await sb
+        .from("assignments")
+        .select("sunday,tech_ids")
+        .eq("plan_id", STATE.plan.id);
+      if (e2) throw e2;
+
+      const asgMap = {};
+      (asg || []).forEach(a => { asgMap[a.sunday] = a.tech_ids || []; });
+      STATE.assignments = asgMap;
+    }
+
+    function renderLogin() {
+      elApp.innerHTML = `
+        <div class="login-container">
+          <h1>🔧 CGH Technik</h1>
+          <p>Professionelle Planung für dein Technik-Team</p>
+
+          <div class="form-group">
+            <label>E-Mail Adresse</label>
+            <input type="email" id="email" placeholder="deine@email.de">
+          </div>
+
+          <div class="form-group">
+            <label>Passwort</label>
+            <input type="password" id="pass" placeholder="Dein Passwort">
+          </div>
+
+          <button class="btn btn-primary" id="btnLogin">🚀 Anmelden</button>
+
+          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
+            Noch kein Konto? <a href="#" id="showRegister">Jetzt registrieren</a>
+          </p>
+        </div>
+      `;
+
+      document.getElementById("btnLogin").onclick = login;
+      document.getElementById("showRegister").onclick = function(e) {
+        e.preventDefault();
+        renderRegister();
+      };
+    }
+
+    function renderRegister() {
+      elApp.innerHTML = `
+        <div class="login-container">
+          <h1>📝 Registrierung</h1>
+          <p>Nach der Registrierung muss dich der Admin freischalten.</p>
+
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="name" placeholder="Vorname Nachname">
+          </div>
+
+          <div class="form-group">
+            <label>E-Mail Adresse</label>
+            <input type="email" id="email" placeholder="deine@email.de">
+          </div>
+
+          <div class="form-group">
+            <label>Passwort</label>
+            <input type="password" id="pass" placeholder="Mind. 8 Zeichen">
+          </div>
+
+          <button class="btn btn-primary" id="btnRegister">✅ Registrieren</button>
+
+          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
+            Schon ein Konto? <a href="#" id="showLogin">Zum Login</a>
+          </p>
+        </div>
+      `;
+
+      document.getElementById("btnRegister").onclick = register;
+      document.getElementById("showLogin").onclick = function(e) {
+        e.preventDefault();
+        renderLogin();
+      };
+    }
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("pass").value;
+      if (!email || !password) return toast("Bitte E-Mail und Passwort eingeben.");
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) return toast("Login fehlgeschlagen: " + error.message);
+
+      STATE.user = data.user;
+      await route();
+    }
+
+    async function register() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("pass").value;
+
+      if (!name || !email || !password) return toast("Bitte Name, E-Mail und Passwort eingeben.");
+
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) return toast("Registrierung fehlgeschlagen: " + error.message);
+
+      try {
+        if (data.user && data.user.id) {
+          await sb.from("profiles").update({ name }).eq("id", data.user.id);
+        }
+      } catch (e) {}
+
+      toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
+      await loadSession();
+      await route();
+    }
+
+    async function logout() {
+      await sb.auth.signOut();
+      STATE.user = null;
+      STATE.profile = null;
+      renderLogin();
+    }
+    window.logout = logout;
+
+    function renderPending() {
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-user">
+            <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
+            <p>${STATE.profile.email}</p>
+          </div>
+
+          <div class="section">
+            <h2>Freischaltung erforderlich</h2>
+            <p style="color: var(--text-light);">
+              Dein Konto wurde angelegt, aber muss noch vom Admin freigeschaltet werden.
+            </p>
+            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function techRoleLabel(p) {
+      if (p.tech_role === "ton") return "🎤 Ton Techniker";
+      if (p.tech_role === "video") return "📹 Video Techniker";
+      if (p.tech_role === "both") return "🎤📹 Allrounder";
+      return "Techniker";
+    }
+
+    function renderTech() {
+      const roleLabel = techRoleLabel(STATE.profile);
+
+      if (!STATE.plan) {
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="header header-user">
+              <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+              <p>${roleLabel}</p>
+            </div>
+            <div class="section">
+              <p style="color:var(--text-light)">⏳ Admin hat noch keinen Plan erstellt.</p>
+              <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const myResponses = STATE.responses[STATE.user.id] || {};
+
+      const rows = STATE.planSundays.map(date => {
+        const my = myResponses[date] || "";
+        return `
+          <tr>
+            <td><strong>${fmtDateDE(date)}</strong></td>
+            <td>
+              <div class="color-row">
+                <div class="color-option color-red ${my === "red" ? "selected" : ""}" onclick="setAvailability('${date}','red')" title="Nicht verfügbar"></div>
+                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" onclick="setAvailability('${date}','yellow')" title="Eher nicht"></div>
+                <div class="color-option color-green ${my === "green" ? "selected" : ""}" onclick="setAvailability('${date}','green')" title="Verfügbar"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+      const assignedHtml = myAssigned.length
+        ? myAssigned.map(d => `<div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
+              <strong>📍 ${fmtDateDE(d)}</strong>
+            </div>`).join("")
+        : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
+
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-user">
+            <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+            <p>${roleLabel}</p>
+          </div>
+
+          <div class="info-box">
+            <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
+          </div>
+
+          <div class="section">
+            <h2>📅 Deine Verfügbarkeit</h2>
+            <table>
+              <tr>
+                <th style="width:40%">Sonntag</th>
+                <th style="width:60%;text-align:center;">Deine Verfügbarkeit</th>
+              </tr>
+              ${rows}
+            </table>
+            <button class="btn btn-success" style="margin-top:20px;" onclick="saveAvailability()">💾 Verfügbarkeit speichern</button>
+          </div>
+
+          <div class="section">
+            <h2>✅ Deine zugewiesenen Termine</h2>
+            ${assignedHtml}
+          </div>
+
+          <div class="section">
+            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+          </div>
+        </div>
+      `;
+    }
+
+    window.setAvailability = function(date, color) {
+      if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+      STATE.responses[STATE.user.id][date] = color;
+      renderTech();
+    };
+
+    window.saveAvailability = async function() {
+      if (!STATE.plan) return;
+      const my = STATE.responses[STATE.user.id] || {};
+      const rows = Object.entries(my).map(([sunday, response]) => ({
+        plan_id: STATE.plan.id,
+        tech_id: STATE.user.id,
+        sunday: sunday,
+        response: response
+      }));
+
+      const { error } = await sb
+        .from("responses")
+        .upsert(rows, { onConflict: "plan_id,tech_id,sunday" });
+
+      if (error) return toast("Fehler: " + error.message);
+
+      toast("✅ Gespeichert!");
+      await fetchResponsesAndAssignments();
+      renderTech();
+    };
+
+    function renderAdminPlan() {
+      const plan = STATE.plan;
+      const techs = STATE.technicians.filter(t => t.approved);
+
+      const tableHeader = techs.map(t =>
+        `<th>${(t.name || t.email)} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`
+      ).join("");
+
+      const rows = STATE.planSundays.map(date => {
+        const tds = techs.map(t => {
+          const resp = (STATE.responses[t.id] || {})[date];
+          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
+          return `<td class="response-cell">${emoji}</td>`;
+        }).join("");
+
+        return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
+      }).join("");
+
+      const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
+      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
+
+      const assignmentsOverview = STATE.planSundays.map(date => {
+        const ids = STATE.assignments[date] || [];
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return (t ? (t.name || t.email) : "?");
+        }).join(" + ");
+        return `
+          <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
+            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="section">
+          <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+          </p>
+
+          <div class="plan-table">
+            <table>
+              <tr>
+                <th>Sonntag</th>
+                ${tableHeader}
+              </tr>
+              ${rows}
+            </table>
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-success btn-small" onclick="autoAssign()">🤖 Auto-Zuweisung</button>
+            <button class="btn btn-danger btn-small" onclick="deletePlan()">🗑️ Plan löschen</button>
+            <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>🔧 Manuelle Anpassung</h3>
+          <div class="form-row three">
+            <select id="manualDate" onchange="updateManualList()">
+              <option value="">-- Sonntag wählen --</option>
+              ${manualSundayOptions}
+            </select>
+            <select id="manualTech">
+              <option value="">-- Techniker wählen --</option>
+              ${manualTechOptions}
+            </select>
+            <button class="btn btn-success btn-small" style="width:100%" onclick="manualAdd()">➕ Hinzufügen</button>
+          </div>
+          <div id="manualList"></div>
+        </div>
+
+        <div class="section">
+          <h3>✅ Zuweisungen Übersicht</h3>
+          ${assignmentsOverview}
+        </div>
+      `;
+    }
+
+    function renderAdmin() {
+      const plan = STATE.plan;
+
+      const techCards = STATE.technicians.map(t => `
+        <div class="tech-card">
+          <div class="tech-info">
+            <h4>${t.name || "(kein Name)"} ${t.approved ? "✅" : "⏳"}</h4>
+            <p>
+              <span class="role-badge">${t.tech_role === "ton" ? "🎤 Ton" : t.tech_role === "video" ? "📹 Video" : t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"}</span>
+              ${t.email}
+            </p>
+            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
+              Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="btn btn-success btn-small" onclick="approveUser('${t.id}', true)">Freigeben</button>
+            <button class="btn btn-danger btn-small" onclick="approveUser('${t.id}', false)">Sperren</button>
+          </div>
+        </div>
+      `).join("");
+
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-admin">
+            <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
+            <p>${STATE.profile.email}</p>
+          </div>
+
+          <div class="info-box">
+            <p>✅ Angemeldet als <strong>${STATE.profile.email}</strong> (Admin)</p>
+          </div>
+
+          <div class="section">
+            <h3>👥 Freischaltung & Rollen</h3>
+
+            <div class="form-row three">
+              <select id="selTech">
+                <option value="">-- Techniker wählen --</option>
+                ${STATE.technicians.map(t => `<option value="${t.id}">${t.email}</option>`).join("")}
+              </select>
+              <input id="inpName" type="text" placeholder="Name setzen (optional)">
+              <select id="selTechRole">
+                <option value="">-- Technik Rolle --</option>
+                <option value="ton">🎤 Ton</option>
+                <option value="video">📹 Video</option>
+                <option value="both">🎤📹 Beides</option>
+              </select>
+            </div>
+            <div class="button-group">
+              <button class="btn btn-primary btn-small" onclick="saveTechMeta()">💾 Name/Rolle speichern</button>
+              <button class="btn btn-primary btn-small" onclick="refreshAdmin()">🔄 Aktualisieren</button>
+            </div>
+
+            <div style="margin-top:18px;max-height:360px;overflow:auto;">
+              ${techCards || '<p style="color:var(--text-light)">Noch keine Techniker registriert.</p>'}
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>🆕 Neuen Plan erstellen</h3>
+            <div class="form-row">
+              <input id="planStart" type="date">
+              <input id="planWeeks" type="number" value="4" min="1" max="12">
+            </div>
+            <button class="btn btn-primary" onclick="createPlan()">📅 Plan erstellen</button>
+          </div>
+
+          ${plan ? renderAdminPlan() : `
+            <div class="section">
+              <h3>📅 Kein Plan vorhanden</h3>
+              <p style="color:var(--text-light)">Erstelle unten einen neuen Plan.</p>
+            </div>
+          `}
+
+          <div class="section">
+            <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+          </div>
+        </div>
+      `;
+
+      if (plan) updateManualList();
+    }
+
+    window.refreshAdmin = async function() {
+      await fetchTechnicians();
+      await fetchCurrentPlan();
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    };
+
+    window.approveUser = async function(id, approved) {
+      const { error } = await sb.from("profiles").update({ approved: approved }).eq("id", id);
+      if (error) return toast("Fehler: " + error.message);
+      await refreshAdmin();
+    };
+
+    window.saveTechMeta = async function() {
+      const id = document.getElementById("selTech").value;
+      const name = document.getElementById("inpName").value.trim();
+      const tech_role = document.getElementById("selTechRole").value;
+
+      if (!id) return toast("Bitte Techniker wählen.");
+
+      const payload = {};
+      if (name) payload.name = name;
+      if (tech_role) payload.tech_role = tech_role;
+
+      if (Object.keys(payload).length === 0) return toast("Nichts zu speichern.");
+
+      const { error } = await sb.from("profiles").update(payload).eq("id", id);
+      if (error) return toast("Fehler: " + error.message);
+
+      await refreshAdmin();
+      toast("✅ Gespeichert.");
+    };
+
+    window.createPlan = async function() {
+      const startStr = document.getElementById("planStart").value;
+      const weeks = parseInt(document.getElementById("planWeeks").value, 10);
+
+      if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
+
+      let current = new Date(startStr + "T12:00:00");
+      let day = current.getDay();
+      if (day !== 0) current.setDate(current.getDate() + (7 - day));
+
+      const sundays = [];
+      for (let i = 0; i < weeks; i++) {
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, "0");
+        const d = String(current.getDate()).padStart(2, "0");
+        sundays.push(`${y}-${m}-${d}`);
+        current.setDate(current.getDate() + 7);
+      }
+
+      const { data: plan, error: e1 } = await sb
+        .from("plans")
+        .insert([{ status: "responses_pending", created_by: STATE.user.id }])
+        .select("id,status,created_at,created_by")
+        .single();
+      if (e1) return toast("Plan Fehler: " + e1.message);
+
+      const rows = sundays.map(s => ({ plan_id: plan.id, sunday: s }));
+      const { error: e2 } = await sb.from("plan_sundays").insert(rows);
+      if (e2) return toast("Sonntage Fehler: " + e2.message);
+
+      toast("✅ Plan erstellt.");
+      await refreshAdmin();
+    };
+
+    window.deletePlan = async function() {
+      if (!STATE.plan) return;
+      if (!confirm("Plan wirklich löschen?")) return;
+
+      const { error } = await sb.from("plans").delete().eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+
+      toast("✅ Plan gelöscht.");
+      await refreshAdmin();
+    };
+
+    window.updateManualList = function() {
+      const date = document.getElementById("manualDate") ? document.getElementById("manualDate").value : "";
+      const box = document.getElementById("manualList");
+      if (!box) return;
+
+      if (!date) {
+        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Bitte zuerst einen Sonntag auswählen.</p>';
+        return;
+      }
+
+      const ids = STATE.assignments[date] || [];
+      const techs = STATE.technicians.filter(t => t.approved);
+
+      if (ids.length === 0) {
+        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Noch niemand zugewiesen.</p>';
+        return;
+      }
+
+      box.innerHTML = `
+        <div style="margin-top: 10px;">
+          ${ids.map(id => {
+            const t = techs.find(x => x.id === id);
+            if (!t) return "";
+            return '<span class="tech-badge">' + (t.name || t.email) +
+              '<span class="remove" onclick="manualRemove(\\'' + date + '\\',\\'' + id + '\\')">✕</span></span>';
+          }).join("")}
+        </div>
+      `;
+    };
+
+    window.manualAdd = async function() {
+      const date = document.getElementById("manualDate") ? document.getElementById("manualDate").value : "";
+      const techId = document.getElementById("manualTech") ? document.getElementById("manualTech").value : "";
+      if (!STATE.plan) return;
+
+      if (!date || !techId) return toast("Sonntag und Techniker wählen.");
+
+      const existing = STATE.assignments[date] || [];
+      if (existing.includes(techId)) return toast("Techniker ist schon zugewiesen.");
+
+      const newIds = existing.concat([techId]);
+
+      const { error } = await sb
+        .from("assignments")
+        .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
+
+      if (error) return toast("Fehler: " + error.message);
+
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    };
+
+    window.manualRemove = async function(date, techId) {
+      if (!STATE.plan) return;
+
+      const existing = STATE.assignments[date] || [];
+      const newIds = existing.filter(x => x !== techId);
+
+      if (newIds.length === 0) {
+        const { error } = await sb
+          .from("assignments")
+          .delete()
+          .eq("plan_id", STATE.plan.id)
+          .eq("sunday", date);
+        if (error) return toast("Fehler: " + error.message);
+      } else {
+        const { error } = await sb
+          .from("assignments")
+          .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
+        if (error) return toast("Fehler: " + error.message);
+      }
+
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    };
+
+    window.autoAssign = async function() {
+      if (!STATE.plan) return;
+
+      const techs = STATE.technicians.filter(t => t.approved);
+
+      for (let i = 0; i < STATE.planSundays.length; i++) {
+        const date = STATE.planSundays[i];
+
+        const tons = techs.filter(t => {
+          const r = (STATE.responses[t.id] || {})[date];
+          return (r === "green" || r === "yellow") && (t.tech_role === "ton" || t.tech_role === "both");
+        });
+
+        const videos = techs.filter(t => {
+          const r = (STATE.responses[t.id] || {})[date];
+          return (r === "green" || r === "yellow") && (t.tech_role === "video" || t.tech_role === "both");
+        });
+
+        const team = [];
+        if (tons.length) team.push(tons[0].id);
+        if (videos.length && team.indexOf(videos[0].id) === -1) team.push(videos[0].id);
+
+        if (team.length) {
+          const { error } = await sb
+            .from("assignments")
+            .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: team }], { onConflict: "plan_id,sunday" });
+          if (error) return toast("Fehler Auto-Zuweisung: " + error.message);
+        }
+      }
+
+      toast("✅ Auto-Zuweisung fertig.");
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    };
+
+    async function route() {
+      await loadSession();
+      if (!STATE.user) return renderLogin();
+
+      await fetchMyProfile();
+
+      if (!STATE.profile) {
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="fatal">
+              <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
+              <p style="margin:0;color:var(--text-light)">
+                Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
+                Prüfe Trigger <code>handle_new_user()</code>.
+              </p>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (STATE.profile.role === "admin") {
+        await fetchTechnicians();
+        await fetchCurrentPlan();
+        await fetchResponsesAndAssignments();
+        return renderAdmin();
+      }
+
+      if (!STATE.profile.approved) return renderPending();
+
+      await fetchCurrentPlan();
+      await fetchResponsesAndAssignments();
+      return renderTech();
+    }
+
+    // Start & session change
+    route();
+    sb.auth.onAuthStateChange(function() { route(); });
+  </script>
 </body>
 </html>
