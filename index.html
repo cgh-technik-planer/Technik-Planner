@@ -564,9 +564,10 @@
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
                     
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
-                        <strong>🔐 Erste Anmeldung?</strong><br>
-                        Nutze deine E-Mail und ein beliebiges Passwort!
+                        <strong>💡 Neue Benutzer:</strong><br>
+                        Nutze deine E-Mail und ein beliebiges Passwort zum Erstellen!
                     </p>
+</parameter>
                 </div>
             `;
         }
@@ -730,9 +731,17 @@
 
                     ${planContent}
 
+                    ${plan ? `
+                        <div class="section">
+                            <h3>🗑️ Plan verwalten</h3>
+                            <button class="btn btn-danger" onclick="deletePlan()">Plan löschen</button>
+                        </div>
+                    ` : ''}
+
                     <div class="section">
                         <button class="btn btn-primary" onclick="logout()">🚪 Abmelden</button>
                     </div>
+</parameter>
                 </div>
             `;
         }
@@ -859,15 +868,13 @@
             const sundays = [];
             let current = new Date(startDate);
             
-            // Stelle sicher, dass wir mit einem Sonntag starten
-            const day = current.getDay();
-            if (day !== 0) {
-                // Wenn nicht Sonntag, zum nächsten Sonntag gehen (0 = Sonntag)
-                current.setDate(current.getDate() + (7 - day));
-            }
-            
             for (let i = 0; i < weeks; i++) {
-                sundays.push(current.toISOString().split('T')[0]);
+                const sunday = new Date(current);
+                const day = sunday.getDay();
+                const diff = sunday.getDate() - day + (day === 0 ? -6 : 1);
+                sunday.setDate(diff);
+                
+                sundays.push(sunday.toISOString().split('T')[0]);
                 current.setDate(current.getDate() + 7);
             }
 
@@ -954,6 +961,21 @@
 
             renderAdmin();
         }
+
+        // ===== DELETE PLAN =====
+        function deletePlan() {
+            if (!APP.currentPlan) return;
+
+            if (confirm('⚠️ Wirklich löschen?\n\nDieser Plan wird komplett gelöscht:\n- Alle Verfügbarkeitseintragungen\n- Alle Team-Zuweisungen\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) {
+                APP.currentPlan = null;
+                APP.responses = {};
+                APP.assignments = {};
+                saveData();
+                renderAdmin();
+                alert('✅ Plan gelöscht!');
+            }
+        }
+</parameter>
 
         // ===== LOGOUT =====
         function logout() {
