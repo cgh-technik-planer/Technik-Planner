@@ -493,7 +493,7 @@
         // ===== SEND PLAN EMAILS =====
         function sendPlanEmails() {
             const sundays = APP.currentPlan.sundays.map(d => new Date(d).toLocaleDateString('de-DE')).join(', ');
-            
+
             APP.technicians.forEach(tech => {
                 const templateParams = {
                     to_email: tech.email,
@@ -548,19 +548,19 @@
                 <div class="login-container">
                     <h1>🔧 CGH Technik</h1>
                     <p>Professionelle Planung für dein Technik-Team</p>
-                    
+
                     <div class="form-group">
                         <label>E-Mail Adresse</label>
                         <input type="email" id="loginEmail" placeholder="deine@email.de">
                     </div>
-                    
+
                     <div class="form-group">
                         <label>Passwort</label>
                         <input type="password" id="loginPass" placeholder="Dein Passwort">
                     </div>
-                    
+
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
-                    
+
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
                         <strong>🔐 Erste Anmeldung?</strong><br>
                         Nutze deine E-Mail und ein beliebiges Passwort!
@@ -590,7 +590,7 @@
 
             // Techniker Login
             const tech = APP.technicians.find(t => t.email === email);
-            
+
             if (!tech) {
                 alert('❌ E-Mail nicht bekannt. Frag den Admin, dich hinzuzufügen!');
                 return;
@@ -744,7 +744,7 @@
                 <div class="section">
                     <h2>📅 Deine Verfügbarkeit</h2>
                     <p style="color: var(--text-light); margin-bottom: 20px;">Wähle für jeden Sonntag: Rot (nicht verfügbar) | Gelb (eher nicht) | Grün (verfügbar)</p>
-                    
+
                     <table>
                         <tr>
                             <th style="width: 40%;">Sonntag</th>
@@ -844,26 +844,32 @@
             }
         }
 
-        // ===== CREATE PLAN =====
+        // ===== CREATE PLAN (KORRIGIERT) =====
         function createPlan() {
-            const startDate = new Date(document.getElementById('planStart').value);
+            const startDateStr = document.getElementById('planStart').value;
             const weeks = parseInt(document.getElementById('planWeeks').value);
 
-            if (!startDate || isNaN(startDate)) {
-                alert('❌ Startdatum wählen!');
+            if (!startDateStr || isNaN(weeks)) {
+                alert('❌ Startdatum und Anzahl Sontage eingeben!');
                 return;
             }
 
             const sundays = [];
-            let current = new Date(startDate);
-            
+            let current = new Date(startDateStr + 'T00:00:00');
+
             for (let i = 0; i < weeks; i++) {
                 const sunday = new Date(current);
                 const day = sunday.getDay();
-                const diff = sunday.getDate() - day + (day === 0 ? -6 : 1);
-                sunday.setDate(diff);
-                
+
+                // Korrekte Sonntags-Berechnung
+                if (day !== 0) {
+                    // Wenn nicht Sonntag, zum nächsten Sonntag springen
+                    const daysUntilSunday = (7 - day) % 7;
+                    sunday.setDate(sunday.getDate() + daysUntilSunday);
+                }
+
                 sundays.push(sunday.toISOString().split('T')[0]);
+                current = new Date(sunday);
                 current.setDate(current.getDate() + 7);
             }
 
@@ -882,9 +888,9 @@
 
             if (CONFIG.emailjs.publicKey && CONFIG.emailjs.publicKey !== 'DEIN_PUBLIC_KEY_HIER') {
                 sendPlanEmails();
-                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n📧 Mails an Techniker versendet!`);
+                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n📧 Mails an Techniker versendet!\n\nSontage: ${sundays.map(d => new Date(d).toLocaleDateString('de-DE')).join(', ')}`);
             } else {
-                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n⚠️ Mails deaktiviert (EmailJS nicht konfiguriert)\n\nTechniker können trotzdem ihre Verfügbarkeit eintragen!`);
+                alert(`✅ Plan mit ${weeks} Sontagen erstellt!\n\n⚠️ Mails deaktiviert (EmailJS nicht konfiguriert)\n\nSontage: ${sundays.map(d => new Date(d).toLocaleDateString('de-DE')).join(', ')}`);
             }
         }
 
