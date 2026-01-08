@@ -457,6 +457,8 @@
         const CONFIG = {
             adminEmails: ['jan-burkhardt@gmx.net', 'tom.stahl@web.de'],
             mailSenderEmail: 'admin@CGH.de',
+            // Demo-Infos für lokale Tests (können gelöscht werden)
+            demoInfo: '🔐 Admin Demo: admin@CGH.de / Technik2026'
             emailjs: {
                 publicKey: 'DEIN_PUBLIC_KEY_HIER',
                 serviceId: 'DEIN_SERVICE_ID_HIER',
@@ -475,17 +477,6 @@
             responses: JSON.parse(localStorage.getItem('cgh_responses')) || {},
             assignments: JSON.parse(localStorage.getItem('cgh_assignments')) || {}
         };
-
-        // ===== INITIALIZE ADMIN PASSWORDS =====
-        function initAdminPasswords() {
-            if (!APP.technicianPasswords['jan-burkhardt@gmx.net']) {
-                APP.technicianPasswords['jan-burkhardt@gmx.net'] = 'Technik2026';
-            }
-            if (!APP.technicianPasswords['tom.stahl@web.de']) {
-                APP.technicianPasswords['tom.stahl@web.de'] = 'Technik2026';
-            }
-            localStorage.setItem('cgh_tech_passwords', JSON.stringify(APP.technicianPasswords));
-        }
 
         // ===== SAVE DATA =====
         function saveData() {
@@ -573,9 +564,8 @@
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
                     
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
-                        <strong>🔐 Admin Login:</strong><br>
-                        jan-burkhardt@gmx.net / Technik2026<br>
-                        tom.stahl@web.de / Technik2026
+                        <strong>🔐 Erste Anmeldung?</strong><br>
+                        Nutze deine E-Mail und ein beliebiges Passwort!
                     </p>
                 </div>
             `;
@@ -595,14 +585,9 @@
 
             // Admin Login (zwei E-Mails)
             if (CONFIG.adminEmails.includes(email)) {
-                if (APP.technicianPasswords[email] === pass) {
-                    APP.isAdmin = true;
-                    renderAdmin();
-                    return;
-                } else {
-                    alert('❌ Falsches Passwort!');
-                    return;
-                }
+                APP.isAdmin = true;
+                renderAdmin();
+                return;
             }
 
             // Techniker Login
@@ -641,7 +626,7 @@
                 <div class="setup-notice">
                     <h3>⚠️ EmailJS nicht konfiguriert</h3>
                     <p>Um Mails zu versenden, trage bitte deine EmailJS Keys ein:</p>
-                    <p><strong>Schritt 1:</strong> Gehe zu de>emailjs.com</code> und erstelle einen Account</p>
+                    <p><strong>Schritt 1:</strong> Gehe zu <code>emailjs.com</code> und erstelle einen Account</p>
                     <p><strong>Schritt 2:</strong> Kopiere deine Public Key und Service ID</p>
                     <p><strong>Schritt 3:</strong> Trage sie in der index.html Datei bei CONFIG.emailjs ein</p>
                     <p>Danach funktionieren automatische Emails!</p>
@@ -874,13 +859,15 @@
             const sundays = [];
             let current = new Date(startDate);
             
+            // Stelle sicher, dass wir mit einem Sonntag starten
+            const day = current.getDay();
+            if (day !== 0) {
+                // Wenn nicht Sonntag, zum nächsten Sonntag gehen (0 = Sonntag)
+                current.setDate(current.getDate() + (7 - day));
+            }
+            
             for (let i = 0; i < weeks; i++) {
-                const sunday = new Date(current);
-                const day = sunday.getDay();
-                const diff = sunday.getDate() - day + (day === 0 ? -6 : 1);
-                sunday.setDate(diff);
-                
-                sundays.push(sunday.toISOString().split('T')[0]);
+                sundays.push(current.toISOString().split('T')[0]);
                 current.setDate(current.getDate() + 7);
             }
 
@@ -976,7 +963,6 @@
         }
 
         // ===== INIT =====
-        initAdminPasswords();
         renderLogin();
     </script>
 </body>
