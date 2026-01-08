@@ -476,6 +476,17 @@
             assignments: JSON.parse(localStorage.getItem('cgh_assignments')) || {}
         };
 
+        // ===== INITIALIZE ADMIN PASSWORDS =====
+        function initAdminPasswords() {
+            if (!APP.technicianPasswords['jan-burkhardt@gmx.net']) {
+                APP.technicianPasswords['jan-burkhardt@gmx.net'] = 'Technik2026';
+            }
+            if (!APP.technicianPasswords['tom.stahl@web.de']) {
+                APP.technicianPasswords['tom.stahl@web.de'] = 'Technik2026';
+            }
+            localStorage.setItem('cgh_tech_passwords', JSON.stringify(APP.technicianPasswords));
+        }
+
         // ===== SAVE DATA =====
         function saveData() {
             localStorage.setItem('cgh_technicians', JSON.stringify(APP.technicians));
@@ -562,8 +573,9 @@
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
                     
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
-                        <strong>🔐 Erste Anmeldung?</strong><br>
-                        Nutze deine E-Mail und ein beliebiges Passwort!
+                        <strong>🔐 Admin Login:</strong><br>
+                        jan-burkhardt@gmx.net / Technik2026<br>
+                        tom.stahl@web.de / Technik2026
                     </p>
                 </div>
             `;
@@ -583,9 +595,14 @@
 
             // Admin Login (zwei E-Mails)
             if (CONFIG.adminEmails.includes(email)) {
-                APP.isAdmin = true;
-                renderAdmin();
-                return;
+                if (APP.technicianPasswords[email] === pass) {
+                    APP.isAdmin = true;
+                    renderAdmin();
+                    return;
+                } else {
+                    alert('❌ Falsches Passwort!');
+                    return;
+                }
             }
 
             // Techniker Login
@@ -624,7 +641,7 @@
                 <div class="setup-notice">
                     <h3>⚠️ EmailJS nicht konfiguriert</h3>
                     <p>Um Mails zu versenden, trage bitte deine EmailJS Keys ein:</p>
-                    <p><strong>Schritt 1:</strong> Gehe zu <code>emailjs.com</code> und erstelle einen Account</p>
+                    <p><strong>Schritt 1:</strong> Gehe zu de>emailjs.com</code> und erstelle einen Account</p>
                     <p><strong>Schritt 2:</strong> Kopiere deine Public Key und Service ID</p>
                     <p><strong>Schritt 3:</strong> Trage sie in der index.html Datei bei CONFIG.emailjs ein</p>
                     <p>Danach funktionieren automatische Emails!</p>
@@ -959,6 +976,7 @@
         }
 
         // ===== INIT =====
+        initAdminPasswords();
         renderLogin();
     </script>
 </body>
