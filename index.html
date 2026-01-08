@@ -453,13 +453,13 @@
     <div id="app"></div>
 
     <script>
-        // ===== KONFIGURATION - HIER DEINE EMAILJS KEYS EINFÜGEN =====
+        // ===== KONFIGURATION =====
         const CONFIG = {
-            adminEmail: 'admin@CGH.de',
-            adminPass: 'Technik2026',
+            adminEmails: ['jan-burkhardt@gmx.net', 'tom.stahl@web.de'],
+            mailSenderEmail: 'admin@CGH.de',
             emailjs: {
-                publicKey: 'DEIN_PUBLIC_KEY_HIER',  // https://dashboard.emailjs.com/admin/account
-                serviceId: 'DEIN_SERVICE_ID_HIER',  // https://dashboard.emailjs.com/admin/services
+                publicKey: 'DEIN_PUBLIC_KEY_HIER',
+                serviceId: 'DEIN_SERVICE_ID_HIER',
                 templateAvailability: 'template_availability',
                 templateFinal: 'template_final'
             }
@@ -501,7 +501,7 @@
                     plan_link: window.location.href,
                     sundays: sundays,
                     weeks: APP.currentPlan.sundays.length,
-                    admin_email: CONFIG.adminEmail
+                    admin_email: CONFIG.mailSenderEmail
                 };
 
                 emailjs.send(CONFIG.emailjs.serviceId, CONFIG.emailjs.templateAvailability, templateParams)
@@ -527,7 +527,7 @@
                         to_email: tech.email,
                         technician_name: tech.name,
                         assignments: techAssignments,
-                        admin_email: CONFIG.adminEmail,
+                        admin_email: CONFIG.mailSenderEmail,
                         role: tech.role === 'ton' ? '🎤 Ton Techniker' : tech.role === 'video' ? '📹 Video Techniker' : '🎤📹 Allrounder'
                     };
 
@@ -562,8 +562,6 @@
                     <button class="btn btn-primary" onclick="login()">🚀 Anmelden</button>
                     
                     <p style="margin-top: 25px; font-size: 13px; color: var(--text-light); border-top: 1px solid var(--border); padding-top: 20px;">
-                        <strong>👨‍💼 Admin Demo:</strong><br>
-                        admin@CGH.de / Technik2026<br><br>
                         <strong>🔐 Erste Anmeldung?</strong><br>
                         Nutze deine E-Mail und ein beliebiges Passwort!
                     </p>
@@ -583,8 +581,8 @@
 
             APP.currentUser = email;
 
-            // Admin Login
-            if (email === CONFIG.adminEmail && pass === CONFIG.adminPass) {
+            // Admin Login (zwei E-Mails)
+            if (CONFIG.adminEmails.includes(email)) {
                 APP.isAdmin = true;
                 renderAdmin();
                 return;
@@ -679,7 +677,7 @@
                 <div class="container">
                     <div class="header header-admin">
                         <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
-                        <p>Tom Stahl & Jan Burkhardt</p>
+                        <p>${APP.currentUser}</p>
                     </div>
 
                     ${emailNotice}
