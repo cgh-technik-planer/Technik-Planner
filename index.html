@@ -485,11 +485,26 @@
         `;
       }).join("");
 
+      // ========= NEU: Team-Mitglieder pro Termin anzeigen =========
+      const approvedTechs = STATE.technicians.filter(t => t.approved);
+
       const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
       const assignedHtml = myAssigned.length
-        ? myAssigned.map(d => `<div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
-              <strong>📍 ${fmtDateDE(d)}</strong>
-            </div>`).join("")
+        ? myAssigned.map(d => {
+            const teamIds = STATE.assignments[d] || [];
+            const teamNames = teamIds.map(id => {
+              if (id === STATE.user.id) return "Du";
+              const t = approvedTechs.find(x => x.id === id);
+              return t ? (t.name || t.email) : "Unbekannt";
+            });
+
+            return `
+              <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
+                <strong>📍 ${fmtDateDE(d)}</strong><br>
+                <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
+              </div>
+            `;
+          }).join("")
         : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
 
       elApp.innerHTML = `
@@ -909,115 +924,4 @@
         .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
 
       if (error) return toast("Fehler: " + error.message);
-
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    }
-
-    async function manualRemove(date, techId) {
-      if (!STATE.plan) return;
-
-      const existing = STATE.assignments[date] || [];
-      const newIds = existing.filter(x => x !== techId);
-
-      if (newIds.length === 0) {
-        const { error } = await sb
-          .from("assignments")
-          .delete()
-          .eq("plan_id", STATE.plan.id)
-          .eq("sunday", date);
-        if (error) return toast("Fehler: " + error.message);
-      } else {
-        const { error } = await sb
-          .from("assignments")
-          .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
-        if (error) return toast("Fehler: " + error.message);
-      }
-
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    }
-
-    async function autoAssign() {
-      if (!STATE.plan) return;
-
-      const techs = STATE.technicians.filter(t => t.approved);
-
-      for (const date of STATE.planSundays) {
-        const tons = techs.filter(t => {
-          const r = (STATE.responses[t.id] || {})[date];
-          return (r === "green" || r === "yellow") && (t.tech_role === "ton" || t.tech_role === "both");
-        });
-
-        const videos = techs.filter(t => {
-          const r = (STATE.responses[t.id] || {})[date];
-          return (r === "green" || r === "yellow") && (t.tech_role === "video" || t.tech_role === "both");
-        });
-
-        const team = [];
-        if (tons.length) team.push(tons[0].id);
-        if (videos.length && !team.includes(videos[0].id)) team.push(videos[0].id);
-
-        if (team.length) {
-          const { error } = await sb
-            .from("assignments")
-            .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: team }], { onConflict: "plan_id,sunday" });
-          if (error) return toast("Fehler Auto-Zuweisung: " + error.message);
-        }
-      }
-
-      toast("✅ Auto-Zuweisung fertig.");
-      await fetchResponsesAndAssignments();
-      renderAdmin();
-    }
-
-    // ======== Router ========
-    async function route() {
-      await safeLoadSession();
-      if (!STATE.user) return renderLogin();
-
-      await fetchMyProfile();
-
-      if (!STATE.profile) {
-        elApp.innerHTML = `
-          <div class="container">
-            <div class="fatal">
-              <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
-              <p style="margin:0;color:var(--text-light)">
-                Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
-                Prüfe Trigger <code>handle_new_user()</code>.
-              </p>
-              <div style="margin-top: 12px;">
-                <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-              </div>
-            </div>
-          </div>
-        `;
-        document.getElementById("btnLogout").addEventListener("click", logout);
-        return;
-      }
-
-      const isAdmin = STATE.profile.role === "admin";
-
-      if (isAdmin) {
-        await fetchTechnicians();
-        await fetchCurrentPlan(true);
-        await fetchResponsesAndAssignments();
-        return renderAdmin();
-      }
-
-      if (!STATE.profile.approved) return renderPending();
-
-      await fetchCurrentPlan(false);
-      await fetchResponsesAndAssignments();
-      return renderTech();
-    }
-
-    // Start & session change
-    route();
-    sb.auth.onAuthStateChange(() => { route(); });
-  </script>
-</body>
-</html>
-
 
