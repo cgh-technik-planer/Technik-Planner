@@ -181,7 +181,6 @@
     const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
 
-    // CDN exposes global "supabase"
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -212,10 +211,17 @@
     const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
     const toast = (msg) => alert(msg);
 
-    // ======== Data load ========
-    async function loadSession() {
-      const { data } = await sb.auth.getSession();
-      STATE.user = data.session?.user || null;
+    // ========= (1) FIX: Safe session load (prevents white screen on invalid refresh token) =========
+    async function safeLoadSession() {
+      try {
+        const { data, error } = await sb.auth.getSession();
+        if (error) throw error;
+        STATE.user = data.session?.user || null;
+      } catch (e) {
+        // invalid refresh token / broken session -> clean up + show login
+        await sb.auth.signOut();
+        STATE.user = null;
+      }
     }
 
     async function fetchMyProfile() {
@@ -230,16 +236,24 @@
       return STATE.profile;
     }
 
-    async function fetchCurrentPlan() {
-      const { data, error } = await sb
+    // ========= (3) Technicians only see published plan =========
+    async function fetchCurrentPlan(isAdmin) {
+      let q = sb
         .from("plans")
-        .select("id,status,created_at,created_by")
+        .select("id,status,created_at,created_by,published")
         .order("created_at", { ascending: false })
         .limit(1);
+
+      if (!isAdmin) q = q.eq("published", true);
+
+      const { data, error } = await q;
       if (error) throw error;
 
       STATE.plan = (data && data.length) ? data[0] : null;
-      if (!STATE.plan) { STATE.planSundays = []; return null; }
+      if (!STATE.plan) {
+        STATE.planSundays = [];
+        return null;
+      }
 
       const { data: sundays, error: e2 } = await sb
         .from("plan_sundays")
@@ -259,12 +273,17 @@
         .eq("role", "tech")
         .order("created_at", { ascending: true });
       if (error) throw error;
+
       STATE.technicians = data || [];
       return STATE.technicians;
     }
 
     async function fetchResponsesAndAssignments() {
-      if (!STATE.plan) { STATE.responses = {}; STATE.assignments = {}; return; }
+      if (!STATE.plan) {
+        STATE.responses = {};
+        STATE.assignments = {};
+        return;
+      }
 
       const { data: resp, error: e1 } = await sb
         .from("responses")
@@ -374,6 +393,7 @@
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("pass").value;
+
       if (!name || !email || !password) return toast("Bitte Name, E-Mail und Passwort eingeben.");
 
       const { data, error } = await sb.auth.signUp({ email, password });
@@ -386,7 +406,7 @@
       } catch (_) {}
 
       toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
-      await loadSession();
+      await safeLoadSession();
       await route();
     }
 
@@ -406,6 +426,7 @@
             <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
             <p>${STATE.profile.email}</p>
           </div>
+
           <div class="section">
             <h2>Freischaltung erforderlich</h2>
             <p style="color: var(--text-light);">
@@ -437,7 +458,7 @@
               <p>${roleLabel}</p>
             </div>
             <div class="section">
-              <p style="color:var(--text-light)">⏳ Admin hat noch keinen Plan erstellt.</p>
+              <p style="color:var(--text-light)">⏳ Es gibt noch keinen freigegebenen Plan.</p>
               <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
             </div>
           </div>
@@ -508,7 +529,6 @@
       document.getElementById("btnLogout").addEventListener("click", logout);
       document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
 
-      // click handler for color options
       elApp.querySelectorAll(".color-option").forEach(el => {
         el.addEventListener("click", () => {
           const date = el.getAttribute("data-date");
@@ -547,6 +567,19 @@
     }
 
     // ======== Admin ========
+
+    // ========= (2) Admin: publish plan =========
+    async function publishPlan() {
+      if (!STATE.plan) return;
+      const { error } = await sb
+        .from("plans")
+        .update({ published: true })
+        .eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+      toast("✅ Plan freigegeben.");
+      await refreshAdmin();
+    }
+
     function renderAdmin() {
       const plan = STATE.plan;
 
@@ -682,9 +715,17 @@
         `;
       }).join("");
 
+      const pubBadge = plan.published
+        ? `<span class="badge">VERÖFFENTLICHT</span>`
+        : `<span class="badge">DRAFT</span>`;
+
+      const pubButton = plan.published
+        ? ``
+        : `<button class="btn btn-success btn-small" id="btnPublishPlan">✅ Plan freigeben</button>`;
+
       return `
         <div class="section" id="adminPlanSection">
-          <h3>📊 Aktueller Plan - Status: <strong>${plan.status}</strong></h3>
+          <h3>📊 Aktueller Plan ${pubBadge} - Status: <strong>${plan.status}</strong></h3>
           <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
             Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
           </p>
@@ -700,6 +741,7 @@
           </div>
 
           <div class="button-group">
+            ${pubButton}
             <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
             <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
           </div>
@@ -733,12 +775,13 @@
       document.getElementById("btnDeletePlan")?.addEventListener("click", deletePlan);
       document.getElementById("btnManualAdd")?.addEventListener("click", manualAdd);
       document.getElementById("manualDate")?.addEventListener("change", updateManualList);
+      document.getElementById("btnPublishPlan")?.addEventListener("click", publishPlan);
       updateManualList();
     }
 
     async function refreshAdmin() {
       await fetchTechnicians();
-      await fetchCurrentPlan();
+      await fetchCurrentPlan(true);
       await fetchResponsesAndAssignments();
       renderAdmin();
     }
@@ -789,8 +832,8 @@
 
       const { data: plan, error: e1 } = await sb
         .from("plans")
-        .insert([{ status: "responses_pending", created_by: STATE.user.id }])
-        .select("id,status,created_at,created_by")
+        .insert([{ status: "responses_pending", created_by: STATE.user.id }]) // published bleibt default false
+        .select("id,status,created_at,created_by,published")
         .single();
       if (e1) return toast("Plan Fehler: " + e1.message);
 
@@ -798,7 +841,7 @@
       const { error: e2 } = await sb.from("plan_sundays").insert(rows);
       if (e2) return toast("Sonntage Fehler: " + e2.message);
 
-      toast("✅ Plan erstellt.");
+      toast("✅ Plan erstellt (Draft). Erst nach Freigabe sehen Techniker ihn.");
       await refreshAdmin();
     }
 
@@ -905,6 +948,7 @@
           const r = (STATE.responses[t.id] || {})[date];
           return (r === "green" || r === "yellow") && (t.tech_role === "ton" || t.tech_role === "both");
         });
+
         const videos = techs.filter(t => {
           const r = (STATE.responses[t.id] || {})[date];
           return (r === "green" || r === "yellow") && (t.tech_role === "video" || t.tech_role === "both");
@@ -929,7 +973,7 @@
 
     // ======== Router ========
     async function route() {
-      await loadSession();
+      await safeLoadSession();
       if (!STATE.user) return renderLogin();
 
       await fetchMyProfile();
@@ -953,16 +997,18 @@
         return;
       }
 
-      if (STATE.profile.role === "admin") {
+      const isAdmin = STATE.profile.role === "admin";
+
+      if (isAdmin) {
         await fetchTechnicians();
-        await fetchCurrentPlan();
+        await fetchCurrentPlan(true);
         await fetchResponsesAndAssignments();
         return renderAdmin();
       }
 
       if (!STATE.profile.approved) return renderPending();
 
-      await fetchCurrentPlan();
+      await fetchCurrentPlan(false);
       await fetchResponsesAndAssignments();
       return renderTech();
     }
