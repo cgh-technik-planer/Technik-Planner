@@ -37,14 +37,18 @@
     .login-container p { color: var(--text-light); margin-bottom: 20px; }
     .form-group { margin-bottom: 20px; text-align: left; }
     label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
-    input, select {
+    input, select, textarea {
       width: 100%; padding: 12px 15px; border: 1px solid var(--border);
       border-radius: 8px; font-size: 16px; font-family: inherit;
       transition: all 0.3s ease;
     }
-    input:focus, select:focus {
+    textarea { resize: vertical; min-height: 80px; }
+    input:focus, select:focus, textarea:focus {
       outline: none; border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(32,128,133,0.1);
+    }
+    input:disabled, textarea:disabled {
+      background: #f0f0f0; cursor: not-allowed; opacity: 0.6;
     }
     .btn {
       width: 100%; padding: 12px; border: none; border-radius: 8px;
@@ -59,6 +63,7 @@
     .btn-danger { background: var(--error); color: #fff; }
     .btn-danger:hover { background: var(--admin-dark); }
     .btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .header {
       padding: 30px 20px; border-radius: 12px; color: white;
@@ -100,19 +105,14 @@
     .date-cell { font-weight: 600; background: #f8f9fa; }
     .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
 
-    .color-row { display:flex; gap:10px; margin:15px 0; }
-    .color-option {
-      width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
-      border: 3px solid transparent; transition: all 0.3s ease; position: relative;
+    .checkbox-row { display:flex; gap:10px; margin:15px 0; align-items:center; }
+    .checkbox-option {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
     }
-    .color-option:hover { transform: scale(1.1); }
-    .color-option.selected::after {
-      content: '✓'; position:absolute; top:50%; left:50%;
-      transform: translate(-50%,-50%); font-size: 20px; font-weight: bold; color: white;
+    .checkbox-option input[type="checkbox"] {
+      width: 20px; height: 20px; cursor: pointer; accent-color: #000;
     }
-    .color-red { background:#ffcdd2; border-color:#ef5350; }
-    .color-yellow { background:#fff9c4; border-color:#fbc02d; }
-    .color-green { background:#c8e6c9; border-color:#43a047; }
+    .checkbox-option label { margin: 0; font-weight: 500; cursor: pointer; }
 
     .tech-card {
       background: var(--surface); border: 2px solid var(--border);
@@ -151,6 +151,14 @@
       padding: 15px; border-radius: 8px; margin-bottom: 20px;
     }
     .info-box p { margin:0; color:#1565c0; font-size:14px; }
+
+    .comment-box {
+      background: #f9f9f9; border: 1px solid var(--border);
+      padding: 12px; border-radius: 8px; margin-bottom: 15px;
+      border-left: 4px solid var(--primary);
+    }
+    .comment-box strong { display: block; margin-bottom: 8px; color: var(--primary); }
+    .comment-box p { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
     .fatal {
       max-width: 1000px; margin: 40px auto; background: #fff;
@@ -198,7 +206,6 @@
       return true;
     };
 
-    // Promise-Fehler abfangen (window.onerror fängt das nicht zuverlässig ab) [web:31][web:125]
     window.addEventListener("unhandledrejection", (event) => {
       const msg = (event?.reason?.message) ? event.reason.message : String(event.reason || "Unbekannter Promise-Fehler");
       if (elApp) {
@@ -220,7 +227,8 @@
       planSundays: [],
       technicians: [],
       responses: {},
-      assignments: {}
+      assignments: {},
+      techComments: {}
     };
 
     const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
@@ -252,7 +260,7 @@
     async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
-        .select("id,status,created_at,created_by,published")
+        .select("id,status,created_at,created_by,published,admin_comment")
         .order("created_at", { ascending: false })
         .limit(1);
 
@@ -294,21 +302,26 @@
       if (!STATE.plan) {
         STATE.responses = {};
         STATE.assignments = {};
+        STATE.techComments = {};
         return;
       }
 
       const { data: resp, error: e1 } = await sb
         .from("responses")
-        .select("tech_id,sunday,response")
+        .select("tech_id,sunday,response,tech_comment")
         .eq("plan_id", STATE.plan.id);
       if (e1) throw e1;
 
       const respMap = {};
+      const commMap = {};
       (resp || []).forEach(r => {
         if (!respMap[r.tech_id]) respMap[r.tech_id] = {};
+        if (!commMap[r.tech_id]) commMap[r.tech_id] = {};
         respMap[r.tech_id][r.sunday] = r.response;
+        commMap[r.tech_id][r.sunday] = r.tech_comment || "";
       });
       STATE.responses = respMap;
+      STATE.techComments = commMap;
 
       const { data: asg, error: e2 } = await sb
         .from("assignments")
@@ -458,6 +471,7 @@
 
     function renderTech() {
       const roleLabel = techRoleLabel(STATE.profile);
+      const planPublished = STATE.plan?.published || false;
 
       if (!STATE.plan) {
         elApp.innerHTML = `
@@ -477,18 +491,30 @@
       }
 
       const myResponses = STATE.responses[STATE.user.id] || {};
+      const myComments = STATE.techComments[STATE.user.id] || {};
 
       const rows = STATE.planSundays.map(date => {
         const my = myResponses[date] || "";
+        const myComment = myComments[date] || "";
+        const isDisabled = planPublished;
+
         return `
           <tr>
             <td><strong>${fmtDateDE(date)}</strong></td>
             <td>
-              <div class="color-row">
-                <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" title="Nicht verfügbar"></div>
-                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" title="Eher nicht"></div>
-                <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" title="Verfügbar"></div>
+              <div class="checkbox-row">
+                <div class="checkbox-option">
+                  <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} 
+                    ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
+                  <label for="ck_${date}">Verfügbar</label>
+                </div>
               </div>
+            </td>
+            <td>
+              <textarea ${isDisabled ? "disabled" : ""} 
+                data-date="${date}" class="tech-comment" 
+                placeholder="z.B. nur 3x, etc..."
+                style="width: 100%; min-height: 60px; font-size: 12px;">${myComment}</textarea>
             </td>
           </tr>
         `;
@@ -515,6 +541,10 @@
           }).join("")
         : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
 
+      const adminCommentHtml = STATE.plan?.admin_comment 
+        ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
+        : "";
+
       elApp.innerHTML = `
         <div class="container">
           <div class="header header-user">
@@ -526,16 +556,21 @@
             <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
           </div>
 
+          ${adminCommentHtml}
+
           <div class="section">
-            <h2>📅 Deine Verfügbarkeit</h2>
+            <h2>📅 Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
             <table>
               <tr>
-                <th style="width:40%">Sonntag</th>
-                <th style="width:60%;text-align:center;">Deine Verfügbarkeit</th>
+                <th style="width:20%">Sonntag</th>
+                <th style="width:20%">Verfügbar</th>
+                <th>Sonderwünsche (nur Admin sieht das)</th>
               </tr>
               ${rows}
             </table>
-            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail">💾 Verfügbarkeit speichern</button>
+            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>
+              💾 Verfügbarkeit speichern
+            </button>
           </div>
 
           <div class="section">
@@ -550,32 +585,45 @@
       `;
 
       document.getElementById("btnLogout").addEventListener("click", logout);
-      document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
+      if (!planPublished) {
+        document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
 
-      elApp.querySelectorAll(".color-option").forEach(el => {
-        el.addEventListener("click", () => {
-          const date = el.getAttribute("data-date");
-          const color = el.getAttribute("data-color");
-          setAvailability(date, color);
+        elApp.querySelectorAll(".tech-comment").forEach(el => {
+          el.addEventListener("change", () => {
+            const date = el.getAttribute("data-date");
+            const comment = el.value;
+            if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
+            STATE.techComments[STATE.user.id][date] = comment;
+          });
         });
-      });
-    }
 
-    function setAvailability(date, color) {
-      if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-      STATE.responses[STATE.user.id][date] = color;
-      renderTech();
+        elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener("change", () => {
+            const date = cb.getAttribute("data-date");
+            if (cb.checked) {
+              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+              STATE.responses[STATE.user.id][date] = "available";
+            } else {
+              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+              STATE.responses[STATE.user.id][date] = "";
+            }
+          });
+        });
+      }
     }
 
     async function saveAvailability() {
       if (!STATE.plan) return;
 
       const my = STATE.responses[STATE.user.id] || {};
+      const myComments = STATE.techComments[STATE.user.id] || {};
+
       const rows = Object.entries(my).map(([sunday, response]) => ({
         plan_id: STATE.plan.id,
         tech_id: STATE.user.id,
         sunday,
-        response
+        response: response === "available" ? "green" : "red",
+        tech_comment: myComments[sunday] || ""
       }));
 
       const { error } = await sb
@@ -596,7 +644,7 @@
         .update({ published: true })
         .eq("id", STATE.plan.id);
       if (error) return toast("Fehler: " + error.message);
-      toast("✅ Plan freigegeben.");
+      toast("✅ Plan freigegeben. Techniker können nicht mehr ändern!");
       await refreshAdmin();
     }
 
@@ -670,6 +718,10 @@
               <input id="planStart" type="date">
               <input id="planWeeks" type="number" value="4" min="1" max="12">
             </div>
+            <div class="form-group">
+              <label>Admin-Kommentar (z.B. Singteam, Abendmahl, etc.)</label>
+              <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee & Kuchen" style="min-height: 80px;"></textarea>
+            </div>
             <button class="btn btn-primary" id="btnCreatePlan">📅 Plan erstellen</button>
           </div>
 
@@ -713,10 +765,26 @@
       const rows = STATE.planSundays.map(date => {
         const tds = techs.map(t => {
           const resp = (STATE.responses[t.id] || {})[date];
-          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
+          const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : "⏳";
           return `<td class="response-cell">${emoji}</td>`;
         }).join("");
         return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
+      }).join("");
+
+      const techCommentsHtml = STATE.planSundays.map(date => {
+        const comments = [];
+        techs.forEach(t => {
+          const comment = (STATE.techComments[t.id] || {})[date];
+          if (comment) {
+            comments.push(`<strong>${t.name || t.email}:</strong> ${comment}`);
+          }
+        });
+        return `
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary);">
+            <strong>${fmtDateDE(date)}</strong><br>
+            ${comments.length ? comments.map(c => `<div style="font-size: 13px; margin-top: 5px;">${c}</div>`).join("") : '<em style="color: var(--text-light); font-size: 13px;">Keine Sonderwünsche</em>'}
+          </div>
+        `;
       }).join("");
 
       const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
@@ -750,6 +818,8 @@
             Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
           </p>
 
+          ${plan.admin_comment ? `<div class="comment-box"><strong>💬 Admin-Kommentar:</strong><p>${plan.admin_comment}</p></div>` : ""}
+
           <div class="plan-table">
             <table>
               <tr>
@@ -763,8 +833,14 @@
           <div class="button-group">
             ${pubButton}
             <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
+            <button class="btn btn-primary btn-small" id="btnCalendarExport">📅 Kalender Export (.ics)</button>
             <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
           </div>
+        </div>
+
+        <div class="section">
+          <h3>💬 Sonderwünsche der Techniker</h3>
+          ${techCommentsHtml || '<p style="color: var(--text-light);">Noch keine Sonderwünsche eingetragen</p>'}
         </div>
 
         <div class="section">
@@ -796,6 +872,7 @@
       document.getElementById("btnManualAdd")?.addEventListener("click", manualAdd);
       document.getElementById("manualDate")?.addEventListener("change", updateManualList);
       document.getElementById("btnPublishPlan")?.addEventListener("click", publishPlan);
+      document.getElementById("btnCalendarExport")?.addEventListener("click", exportCalendar);
       updateManualList();
     }
 
@@ -835,6 +912,7 @@
     async function createPlan() {
       const startStr = document.getElementById("planStart").value;
       const weeks = parseInt(document.getElementById("planWeeks").value, 10);
+      const adminComment = document.getElementById("adminComment").value.trim();
       if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
 
       let current = new Date(startStr + "T12:00:00");
@@ -852,8 +930,8 @@
 
       const { data: plan, error: e1 } = await sb
         .from("plans")
-        .insert([{ status: "responses_pending", created_by: STATE.user.id }])
-        .select("id,status,created_at,created_by,published")
+        .insert([{ status: "responses_pending", created_by: STATE.user.id, admin_comment: adminComment }])
+        .select("id,status,created_at,created_by,published,admin_comment")
         .single();
       if (e1) return toast("Plan Fehler: " + e1.message);
 
@@ -991,6 +1069,72 @@
       renderAdmin();
     }
 
+    function exportCalendar() {
+      if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan vorhanden.");
+
+      let ical = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//CGH Technik Planer//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:CGH Technik Plan
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:STANDARD
+DTSTART:19961027T030000
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:19810329T020000
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+END:VTIMEZONE
+`;
+
+      STATE.planSundays.forEach(date => {
+        const ids = STATE.assignments[date] || [];
+        const techs = STATE.technicians.filter(t => t.approved);
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return (t ? (t.name || t.email) : "?");
+        }).join(", ");
+
+        const d = new Date(date + "T18:00:00");
+        const dtstart = d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+        const dtend = new Date(d.getTime() + 3 * 60 * 60000).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+        ical += `BEGIN:VEVENT
+UID:${STATE.plan.id}-${date}@cgh-technik
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:🎤 CGH Technik - ${fmtDateDE(date)}
+DESCRIPTION:Team: ${names || "noch nicht zugewiesen"}
+LOCATION:CGH Stuttgart
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+`;
+      });
+
+      ical += `END:VCALENDAR`;
+
+      const blob = new Blob([ical], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `CGH-Technik-Plan-${STATE.plan.id}.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast("✅ Kalender exportiert!");
+    }
+
     async function route() {
       await safeLoadSession();
       if (!STATE.user) return renderLogin();
@@ -1027,8 +1171,8 @@
 
       if (!STATE.profile.approved) return renderPending();
 
-      await fetchTechnicians();      // damit Team-Namen angezeigt werden
-      await fetchCurrentPlan(false); // nur published
+      await fetchTechnicians();
+      await fetchCurrentPlan(false);
       await fetchResponsesAndAssignments();
       return renderTech();
     }
