@@ -105,14 +105,25 @@
     .date-cell { font-weight: 600; background: #f8f9fa; }
     .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
 
-    .checkbox-row { display:flex; gap:10px; margin:15px 0; align-items:center; }
-    .checkbox-option {
-      display: flex; align-items: center; gap: 8px; cursor: pointer;
+    /* === Verfügbarkeit: rot/gelb/grün + schwarzer Haken === */
+    .color-row { display:flex; gap:10px; margin:15px 0; }
+    .color-option {
+      width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+      border: 3px solid transparent; transition: all 0.3s ease; position: relative;
+      user-select: none;
     }
-    .checkbox-option input[type="checkbox"] {
-      width: 20px; height: 20px; cursor: pointer; accent-color: #000;
+    .color-option:hover { transform: scale(1.1); }
+    .color-option.selected::after {
+      content: '✓';
+      position:absolute; top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      font-size: 22px; font-weight: 900;
+      color: #000; /* schwarzer Haken */
     }
-    .checkbox-option label { margin: 0; font-weight: 500; cursor: pointer; }
+    .color-option[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
+    .color-red { background:#ffcdd2; border-color:#ef5350; }
+    .color-yellow { background:#fff9c4; border-color:#fbc02d; }
+    .color-green { background:#c8e6c9; border-color:#43a047; }
 
     .tech-card {
       background: var(--surface); border: 2px solid var(--border);
@@ -260,7 +271,7 @@
     async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
-        .select("id,status,created_at,created_by,published,admin_comment")
+        .select("id,status,created_at,created_by,published,admin_comment,avail_open")
         .order("created_at", { ascending: false })
         .limit(1);
 
@@ -471,7 +482,6 @@
 
     function renderTech() {
       const roleLabel = techRoleLabel(STATE.profile);
-      const planPublished = STATE.plan?.published || false;
 
       if (!STATE.plan) {
         elApp.innerHTML = `
@@ -491,37 +501,39 @@
       }
 
       const myResponses = STATE.responses[STATE.user.id] || {};
-      const myComments = STATE.techComments[STATE.user.id] || {};
+      const myComments  = STATE.techComments[STATE.user.id] || {};
+
+      const isOpen = !!STATE.plan.avail_open;    // Admin-Schalter
+      const isLocked = !isOpen;                  // wenn nicht offen => gesperrt
 
       const rows = STATE.planSundays.map(date => {
         const my = myResponses[date] || "";
         const myComment = myComments[date] || "";
-        const isDisabled = planPublished;
 
         return `
           <tr>
             <td><strong>${fmtDateDE(date)}</strong></td>
             <td>
-              <div class="checkbox-row">
-                <div class="checkbox-option">
-                  <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} 
-                    ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
-                  <label for="ck_${date}">Verfügbar</label>
-                </div>
+              <div class="color-row">
+                <div class="color-option color-red ${my === "red" ? "selected" : ""}"
+                     data-date="${date}" data-color="red" title="Nicht verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}"
+                     data-date="${date}" data-color="yellow" title="Eher nicht" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-green ${my === "green" ? "selected" : ""}"
+                     data-date="${date}" data-color="green" title="Verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
               </div>
             </td>
             <td>
-              <textarea ${isDisabled ? "disabled" : ""} 
-                data-date="${date}" class="tech-comment" 
-                placeholder="z.B. nur 3x, etc..."
-                style="width: 100%; min-height: 60px; font-size: 12px;">${myComment}</textarea>
+              <textarea class="tech-comment"
+                data-date="${date}"
+                placeholder="Sonderwünsche (nur Admin sieht das)…"
+                ${isLocked ? "disabled" : ""} style="width:100%;min-height:60px;font-size:12px;">${myComment}</textarea>
             </td>
           </tr>
         `;
       }).join("");
 
       const approvedTechs = STATE.technicians.filter(t => t.approved);
-
       const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
       const assignedHtml = myAssigned.length
         ? myAssigned.map(d => {
@@ -531,7 +543,6 @@
               const t = approvedTechs.find(x => x.id === id);
               return t ? (t.name || t.email) : "Unbekannt";
             });
-
             return `
               <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
                 <strong>📍 ${fmtDateDE(d)}</strong><br>
@@ -541,7 +552,7 @@
           }).join("")
         : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
 
-      const adminCommentHtml = STATE.plan?.admin_comment 
+      const adminCommentHtml = STATE.plan?.admin_comment
         ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
         : "";
 
@@ -559,16 +570,17 @@
           ${adminCommentHtml}
 
           <div class="section">
-            <h2>📅 Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
+            <h2>📅 Deine Verfügbarkeit ${isLocked ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
             <table>
               <tr>
                 <th style="width:20%">Sonntag</th>
-                <th style="width:20%">Verfügbar</th>
+                <th style="width:30%;text-align:center;">Deine Verfügbarkeit</th>
                 <th>Sonderwünsche (nur Admin sieht das)</th>
               </tr>
               ${rows}
             </table>
-            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>
+
+            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail" ${isLocked ? "disabled" : ""}>
               💾 Verfügbarkeit speichern
             </button>
           </div>
@@ -585,28 +597,26 @@
       `;
 
       document.getElementById("btnLogout").addEventListener("click", logout);
-      if (!planPublished) {
+
+      if (!isLocked) {
         document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
 
         elApp.querySelectorAll(".tech-comment").forEach(el => {
-          el.addEventListener("change", () => {
+          el.addEventListener("input", () => {
             const date = el.getAttribute("data-date");
-            const comment = el.value;
             if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
-            STATE.techComments[STATE.user.id][date] = comment;
+            STATE.techComments[STATE.user.id][date] = el.value;
           });
         });
 
-        elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.addEventListener("change", () => {
-            const date = cb.getAttribute("data-date");
-            if (cb.checked) {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "available";
-            } else {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "";
-            }
+        elApp.querySelectorAll(".color-option").forEach(el => {
+          el.addEventListener("click", () => {
+            if (el.getAttribute("aria-disabled") === "true") return;
+            const date = el.getAttribute("data-date");
+            const color = el.getAttribute("data-color");
+            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+            STATE.responses[STATE.user.id][date] = color;
+            renderTech();
           });
         });
       }
@@ -614,15 +624,16 @@
 
     async function saveAvailability() {
       if (!STATE.plan) return;
+      if (!STATE.plan.avail_open) return toast("⛔ Eintragen ist aktuell gesperrt.");
 
       const my = STATE.responses[STATE.user.id] || {};
       const myComments = STATE.techComments[STATE.user.id] || {};
 
-      const rows = Object.entries(my).map(([sunday, response]) => ({
+      const rows = STATE.planSundays.map((sunday) => ({
         plan_id: STATE.plan.id,
         tech_id: STATE.user.id,
         sunday,
-        response: response === "available" ? "green" : "red",
+        response: my[sunday] || "",
         tech_comment: myComments[sunday] || ""
       }));
 
@@ -637,6 +648,7 @@
       renderTech();
     }
 
+    // ======== Admin ========
     async function publishPlan() {
       if (!STATE.plan) return;
       const { error } = await sb
@@ -644,7 +656,18 @@
         .update({ published: true })
         .eq("id", STATE.plan.id);
       if (error) return toast("Fehler: " + error.message);
-      toast("✅ Plan freigegeben. Techniker können nicht mehr ändern!");
+      toast("✅ Plan freigegeben.");
+      await refreshAdmin();
+    }
+
+    async function setAvailOpen(open) {
+      if (!STATE.plan) return;
+      const { error } = await sb
+        .from("plans")
+        .update({ avail_open: open })
+        .eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+      toast(open ? "🔓 Eintragung geöffnet." : "🔒 Eintragung gesperrt.");
       await refreshAdmin();
     }
 
@@ -723,6 +746,9 @@
               <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee & Kuchen" style="min-height: 80px;"></textarea>
             </div>
             <button class="btn btn-primary" id="btnCreatePlan">📅 Plan erstellen</button>
+            <p style="margin-top:10px;color:var(--text-light);font-size:13px;">
+              Hinweis: Neuer Plan ist standardmäßig <strong>gesperrt</strong> (Eintragung geschlossen).
+            </p>
           </div>
 
           ${plan ? renderAdminPlan() : `
@@ -765,7 +791,7 @@
       const rows = STATE.planSundays.map(date => {
         const tds = techs.map(t => {
           const resp = (STATE.responses[t.id] || {})[date];
-          const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : "⏳";
+          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
           return `<td class="response-cell">${emoji}</td>`;
         }).join("");
         return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
@@ -775,9 +801,7 @@
         const comments = [];
         techs.forEach(t => {
           const comment = (STATE.techComments[t.id] || {})[date];
-          if (comment) {
-            comments.push(`<strong>${t.name || t.email}:</strong> ${comment}`);
-          }
+          if (comment) comments.push(`<strong>${t.name || t.email}:</strong> ${comment}`);
         });
         return `
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary);">
@@ -811,11 +835,18 @@
         ? ``
         : `<button class="btn btn-success btn-small" id="btnPublishPlan">✅ Plan freigeben</button>`;
 
+      const lockButton = plan.avail_open
+        ? `<button class="btn btn-danger btn-small" id="btnAvailClose">🔒 Eintragung sperren</button>`
+        : `<button class="btn btn-success btn-small" id="btnAvailOpen">🔓 Eintragung öffnen</button>`;
+
       return `
         <div class="section" id="adminPlanSection">
           <h3>📊 Aktueller Plan ${pubBadge} - Status: <strong>${plan.status}</strong></h3>
-          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">
             Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+          </p>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+            Eintragung: <strong>${plan.avail_open ? "OFFEN" : "GESPERRT"}</strong>
           </p>
 
           ${plan.admin_comment ? `<div class="comment-box"><strong>💬 Admin-Kommentar:</strong><p>${plan.admin_comment}</p></div>` : ""}
@@ -832,6 +863,7 @@
 
           <div class="button-group">
             ${pubButton}
+            ${lockButton}
             <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
             <button class="btn btn-primary btn-small" id="btnCalendarExport">📅 Kalender Export (.ics)</button>
             <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
@@ -873,6 +905,10 @@
       document.getElementById("manualDate")?.addEventListener("change", updateManualList);
       document.getElementById("btnPublishPlan")?.addEventListener("click", publishPlan);
       document.getElementById("btnCalendarExport")?.addEventListener("click", exportCalendar);
+
+      document.getElementById("btnAvailOpen")?.addEventListener("click", () => setAvailOpen(true));
+      document.getElementById("btnAvailClose")?.addEventListener("click", () => setAvailOpen(false));
+
       updateManualList();
     }
 
@@ -930,8 +966,8 @@
 
       const { data: plan, error: e1 } = await sb
         .from("plans")
-        .insert([{ status: "responses_pending", created_by: STATE.user.id, admin_comment: adminComment }])
-        .select("id,status,created_at,created_by,published,admin_comment")
+        .insert([{ status: "responses_pending", created_by: STATE.user.id, admin_comment: adminComment, avail_open: false }])
+        .select("id,status,created_at,created_by,published,admin_comment,avail_open")
         .single();
       if (e1) return toast("Plan Fehler: " + e1.message);
 
@@ -939,7 +975,7 @@
       const { error: e2 } = await sb.from("plan_sundays").insert(rows);
       if (e2) return toast("Sonntage Fehler: " + e2.message);
 
-      toast("✅ Plan erstellt (Draft). Erst nach Freigabe sehen Techniker ihn.");
+      toast("✅ Plan erstellt (Draft). Eintragung ist erstmal gesperrt – bitte im Admin öffnen.");
       await refreshAdmin();
     }
 
