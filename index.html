@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CGH Technik Planer</title>
 
-  <!-- Supabase JS via CDN (no ESM import) -->
+  <!-- Supabase JS via CDN no ESM import -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -27,19 +27,24 @@
       --error: #c01530;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
     }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     .login-container {
-      max-width: 420px; margin: 80px auto; padding: 40px;
-      background: var(--surface); border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center;
+      max-width: 420px;
+      margin: 80px auto;
+      padding: 40px;
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      text-align: center;
     }
     .login-container h1 {
-      font-size: 32px; margin-bottom: 10px;
+      font-size: 32px;
+      margin-bottom: 10px;
       background: linear-gradient(135deg, var(--primary), var(--admin));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -151,11 +156,27 @@
     .date-cell { font-weight: 600; background: #f8f9fa; }
     .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
 
-    /* Checkbox (falls noch irgendwo genutzt) */
-    .checkbox-row { display:flex; gap:10px; margin:15px 0; align-items:center; }
-    .checkbox-option { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .checkbox-option input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: #000; }
-    .checkbox-option label { margin: 0; font-weight: 500; cursor: pointer; }
+    /* Verfügbarkeit rot/gelb/grün (schwarzer Haken) */
+    .color-row { display:flex; gap:10px; margin:15px 0; justify-content:center; }
+    .color-option {
+      width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+      border: 3px solid transparent; transition: all 0.3s ease;
+      position: relative; user-select: none;
+    }
+    .color-option:hover { transform: scale(1.1); }
+    .color-option.selected::after {
+      content: "✓";
+      position:absolute;
+      top:50%; left:50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      font-weight: 900;
+      color: #000;
+    }
+    .color-option[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
+    .color-red { background:#ffcdd2; border-color:#ef5350; }
+    .color-yellow { background:#fff9c4; border-color:#fbc02d; }
+    .color-green { background:#c8e6c9; border-color:#43a047; }
 
     .tech-card {
       background: var(--surface);
@@ -341,7 +362,7 @@
     async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
-        .select("id,status,createdat,createdby,published,admincomment")
+        .select("id,status,createdat,createdby,published,admincomment,availopen")
         .order("createdat", { ascending: false })
         .limit(1);
       if (!isAdmin) q = q.eq("published", true);
@@ -548,8 +569,6 @@
 
     function renderTech() {
       const roleLabel = techRoleLabel(STATE.profile);
-      const planPublished = STATE.plan?.published || false;
-
       if (!STATE.plan) {
         elApp.innerHTML = `
           <div class="container">
@@ -570,32 +589,32 @@
       const myResponses = STATE.responses[STATE.user.id] || {};
       const myComments = STATE.techComments[STATE.user.id] || {};
 
+      const isOpen = !!STATE.plan.availopen; // Admin-Schalter
+      const isLocked = !isOpen;
+
       const rows = STATE.planSundays.map(date => {
         const my = myResponses[date];
-        const myComment = myComments[date];
-        const isDisabled = planPublished;
-
+        const myComment = myComments[date] || "";
         return `
           <tr>
             <td><strong>${fmtDateDE(date)}</strong></td>
             <td>
-              <div class="checkbox-row">
-                <div class="checkbox-option">
-                  <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
-                  <label for="ck_${date}">Verfügbar</label>
-                </div>
+              <div class="color-row">
+                <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" title="Nicht verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" title="Eher nicht" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" title="Verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
               </div>
             </td>
             <td>
-              <textarea ${isDisabled ? "disabled" : ""} data-date="${date}" class="tech-comment" placeholder="z.B. nur 3x, etc..." style="width: 100%; min-height: 60px; font-size: 12px;">${myComment || ""}</textarea>
+              <textarea class="tech-comment" data-date="${date}" placeholder="Sonderwünsche (nur Admin sieht das)" ${isLocked ? "disabled" : ""} style="width:100%;min-height:60px;font-size:12px;">${myComment}</textarea>
             </td>
           </tr>
         `;
       }).join("");
 
       const approvedTechs = STATE.technicians.filter(t => t.approved);
-
       const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+
       const assignedHtml = myAssigned.length
         ? myAssigned.map(d => {
             const teamIds = STATE.assignments[d] || [];
@@ -603,7 +622,7 @@
               if (id === STATE.user.id) return "Du";
               const t = approvedTechs.find(x => x.id === id);
               return t ? (t.name || t.email) : "Unbekannt";
-            });
+            }).filter(Boolean);
 
             return `
               <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
@@ -632,19 +651,23 @@
           ${adminCommentHtml}
 
           <div class="section">
-            <h2>Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">Gesperrt</span>' : ''}</h2>
+            <h2>Deine Verfügbarkeit ${isLocked ? '<span style="color: var(--warning);">Gesperrt</span>' : ''}</h2>
             <table>
               <tr>
                 <th style="width:20%">Sonntag</th>
-                <th style="width:20%">Verfügbar</th>
+                <th style="width:30%;text-align:center">Deine Verfügbarkeit</th>
                 <th>Sonderwünsche (nur Admin sieht das)</th>
               </tr>
               ${rows}
             </table>
 
             <div class="button-group" style="margin-top:20px;">
-              <button class="btn btn-success" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>Verfügbarkeit speichern</button>
-              <button class="btn btn-primary" id="btnMyCalendarExport">Meine Termine exportieren (.ics)</button>
+              <button class="btn btn-success" id="btnSaveAvail" ${isLocked ? "disabled" : ""}>
+                Verfügbarkeit speichern
+              </button>
+              <button class="btn btn-primary" id="btnMyCalendarExport">
+                Meine Termine exportieren (.ics)
+              </button>
             </div>
           </div>
 
@@ -662,28 +685,25 @@
       document.getElementById("btnLogout").addEventListener("click", logout);
       document.getElementById("btnMyCalendarExport").addEventListener("click", exportMyCalendar);
 
-      if (!planPublished) {
+      if (!isLocked) {
         document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
 
         elApp.querySelectorAll(".tech-comment").forEach(el => {
-          el.addEventListener("change", () => {
+          el.addEventListener("input", () => {
             const date = el.getAttribute("data-date");
-            const comment = el.value;
             if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
-            STATE.techComments[STATE.user.id][date] = comment;
+            STATE.techComments[STATE.user.id][date] = el.value;
           });
         });
 
-        elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.addEventListener("change", () => {
-            const date = cb.getAttribute("data-date");
-            if (cb.checked) {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "available";
-            } else {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "";
-            }
+        elApp.querySelectorAll(".color-option").forEach(el => {
+          el.addEventListener("click", () => {
+            if (el.getAttribute("aria-disabled") === "true") return;
+            const date = el.getAttribute("data-date");
+            const color = el.getAttribute("data-color");
+            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+            STATE.responses[STATE.user.id][date] = color;
+            renderTech();
           });
         });
       }
@@ -691,15 +711,16 @@
 
     async function saveAvailability() {
       if (!STATE.plan) return;
+      if (!STATE.plan.availopen) return toast("Eintragen ist aktuell gesperrt.");
 
       const my = STATE.responses[STATE.user.id] || {};
       const myComments = STATE.techComments[STATE.user.id] || {};
 
-      const rows = Object.entries(my).map(([sunday, response]) => ({
+      const rows = STATE.planSundays.map(sunday => ({
         planid: STATE.plan.id,
         techid: STATE.user.id,
         sunday,
-        response: response === "available" ? "green" : "red",
+        response: my[sunday] || null,
         techcomment: myComments[sunday] || ""
       }));
 
@@ -714,7 +735,7 @@
       renderTech();
     }
 
-    // NEU: Techniker exportiert nur eigene Termine
+    // ===== NEU: Techniker-Export (nur eigene zugewiesene Termine) =====
     function exportMyCalendar() {
       if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan vorhanden.");
 
@@ -782,9 +803,10 @@ END:VEVENT
       link.click();
       URL.revokeObjectURL(url);
 
-      toast("Deine Termine wurden exportiert!");
+      toast("Kalender exportiert!");
     }
 
+    // ===== Admin =====
     async function publishPlan() {
       if (!STATE.plan) return;
       const { error } = await sb
@@ -792,7 +814,18 @@ END:VEVENT
         .update({ published: true })
         .eq("id", STATE.plan.id);
       if (error) return toast("Fehler: " + error.message);
-      toast("Plan freigegeben. Techniker können nicht mehr ändern!");
+      toast("Plan freigegeben.");
+      await refreshAdmin();
+    }
+
+    async function setAvailOpen(open) {
+      if (!STATE.plan) return;
+      const { error } = await sb
+        .from("plans")
+        .update({ availopen: open })
+        .eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+      toast(open ? "Eintragung geöffnet." : "Eintragung gesperrt.");
       await refreshAdmin();
     }
 
@@ -811,7 +844,9 @@ END:VEVENT
               }</span>
               ${t.email}
             </p>
-            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}</p>
+            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
+              Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}
+            </p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
             <button class="btn btn-success btn-small btn-approve" data-id="${t.id}" data-approved="true">Freigeben</button>
@@ -832,14 +867,14 @@ END:VEVENT
           </div>
 
           <div class="section">
-            <h3>Freischaltung & Rollen</h3>
+            <h3>Freischaltung Rollen</h3>
 
             <div class="form-row three">
               <select id="selTech">
                 <option value="">-- Techniker wählen --</option>
                 ${STATE.technicians.map(t => `<option value="${t.id}">${t.email}</option>`).join("")}
               </select>
-              <input id="inpName" type="text" placeholder="Name setzen (optional)">
+              <input id="inpName" type="text" placeholder="Name setzen optional">
               <select id="selTechRole">
                 <option value="">-- Technik Rolle --</option>
                 <option value="ton">Ton</option>
@@ -853,6 +888,10 @@ END:VEVENT
               <button class="btn btn-primary btn-small" id="btnRefresh">Aktualisieren</button>
             </div>
 
+            <p style="margin-top:10px;color:var(--text-light);font-size:13px;">
+              Hinweis: Neuer Plan ist standardmäßig <strong>gesperrt</strong> (Eintragung geschlossen).
+            </p>
+
             <div style="margin-top:18px;max-height:360px;overflow:auto;">
               ${techCards || '<p style="color:var(--text-light)">Noch keine Techniker registriert.</p>'}
             </div>
@@ -865,7 +904,7 @@ END:VEVENT
               <input id="planWeeks" type="number" value="4" min="1" max="12">
             </div>
             <div class="form-group">
-              <label>Admin-Kommentar (z.B. Singteam, Abendmahl, etc.)</label>
+              <label>Admin-Kommentar</label>
               <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee Kuchen" style="min-height: 80px;"></textarea>
             </div>
             <button class="btn btn-primary" id="btnCreatePlan">Plan erstellen</button>
@@ -947,12 +986,18 @@ END:VEVENT
 
       const pubBadge = plan.published ? `<span class="badge">VERÖFFENTLICHT</span>` : `<span class="badge">DRAFT</span>`;
       const pubButton = plan.published ? `` : `<button class="btn btn-success btn-small" id="btnPublishPlan">Plan freigeben</button>`;
+      const lockButton = plan.availopen
+        ? `<button class="btn btn-danger btn-small" id="btnAvailClose">Eintragung sperren</button>`
+        : `<button class="btn btn-success btn-small" id="btnAvailOpen">Eintragung öffnen</button>`;
 
       return `
         <div class="section" id="adminPlanSection">
           <h3>Aktueller Plan ${pubBadge} - Status <strong>${plan.status}</strong></h3>
-          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">
             Erstellt ${new Date(plan.createdat).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+          </p>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+            Eintragung <strong>${plan.availopen ? "OFFEN" : "GESPERRT"}</strong>
           </p>
 
           ${plan.admincomment ? `<div class="comment-box"><strong>Admin-Kommentar</strong><p>${plan.admincomment}</p></div>` : ""}
@@ -969,6 +1014,7 @@ END:VEVENT
 
           <div class="button-group">
             ${pubButton}
+            ${lockButton}
             <button class="btn btn-success btn-small" id="btnAutoAssign">Auto-Zuweisung</button>
             <button class="btn btn-primary btn-small" id="btnCalendarExport">Kalender Export (.ics)</button>
             <button class="btn btn-danger btn-small" id="btnDeletePlan">Plan löschen</button>
@@ -1010,6 +1056,8 @@ END:VEVENT
       document.getElementById("manualDate")?.addEventListener("change", updateManualList);
       document.getElementById("btnPublishPlan")?.addEventListener("click", publishPlan);
       document.getElementById("btnCalendarExport")?.addEventListener("click", exportCalendar);
+      document.getElementById("btnAvailOpen")?.addEventListener("click", () => setAvailOpen(true));
+      document.getElementById("btnAvailClose")?.addEventListener("click", () => setAvailOpen(false));
       updateManualList();
     }
 
@@ -1030,7 +1078,6 @@ END:VEVENT
       const id = document.getElementById("selTech").value;
       const name = document.getElementById("inpName").value.trim();
       const techrole = document.getElementById("selTechRole").value;
-
       if (!id) return toast("Bitte Techniker wählen.");
 
       const payload = {};
@@ -1049,7 +1096,6 @@ END:VEVENT
       const startStr = document.getElementById("planStart").value;
       const weeks = parseInt(document.getElementById("planWeeks").value, 10);
       const adminComment = document.getElementById("adminComment").value.trim();
-
       if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
 
       let current = new Date(startStr + "T12:00:00");
@@ -1067,8 +1113,8 @@ END:VEVENT
 
       const { data: plan, error: e1 } = await sb
         .from("plans")
-        .insert([{ status: "responses_pending", createdby: STATE.user.id, admincomment: adminComment }])
-        .select("id,status,createdat,createdby,published,admincomment")
+        .insert([{ status: "responses_pending", createdby: STATE.user.id, admincomment: adminComment, availopen: false }])
+        .select("id,status,createdat,createdby,published,admincomment,availopen")
         .single();
       if (e1) return toast("Plan Fehler: " + e1.message);
 
@@ -1076,7 +1122,7 @@ END:VEVENT
       const { error: e2 } = await sb.from("plansundays").insert(rows);
       if (e2) return toast("Sonntage Fehler: " + e2.message);
 
-      toast("Plan erstellt (Draft). Erst nach Freigabe sehen Techniker ihn.");
+      toast("Plan erstellt Draft. Eintragung ist erstmal gesperrt bitte im Admin öffnen.");
       await refreshAdmin();
     }
 
@@ -1194,7 +1240,6 @@ END:VEVENT
         const { error } = await sb
           .from("assignments")
           .upsert([{ planid: STATE.plan.id, sunday: date, techids: ids }], { onConflict: "planid,sunday" });
-
         if (error) return toast("Fehler: " + error.message);
       }
 
@@ -1274,7 +1319,6 @@ END:VEVENT
       if (!STATE.user) return renderLogin();
 
       await fetchMyProfile();
-
       if (!STATE.profile) {
         elApp.innerHTML = `
           <div class="container">
@@ -1282,6 +1326,7 @@ END:VEVENT
               <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
               <p style="margin:0;color:var(--text-light)">
                 Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
+                Prüfe Trigger <code>handle_new_user</code>.
               </p>
               <div style="margin-top: 12px;">
                 <button class="btn btn-primary" id="btnLogout">Abmelden</button>
@@ -1316,12 +1361,10 @@ END:VEVENT
       } catch (e) {
         const msg = e?.message ? e.message : String(e);
         elApp.innerHTML = `
-          <div class="container">
-            <div class="fatal">
-              <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler beim Laden</h2>
-              <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken</p>
-              <pre>${msg}</pre>
-            </div>
+          <div class="fatal">
+            <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler beim Laden</h2>
+            <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken</p>
+            <pre>${msg}</pre>
           </div>
         `;
       }
