@@ -467,155 +467,156 @@
     }
 
     function renderTech() {
-      const roleLabel = techRoleLabel(STATE.profile);
-      const planPublished = STATE.plan?.published || false;
+  const roleLabel = techRoleLabel(STATE.profile);
+  const planPublished = STATE.plan?.published || false;
 
-      if (!STATE.plan) {
-        elApp.innerHTML = `
-          <div class="container">
-            <div class="header header-user">
-              <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-              <p>${roleLabel}</p>
-            </div>
-            <div class="section">
-              <p style="color:var(--text-light)">⏳ Es gibt noch keinen freigegebenen Plan.</p>
-              <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+  if (!STATE.plan) {
+    elApp.innerHTML = `
+      <div class="container">
+        <div class="header header-user">
+          <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+          <p>${roleLabel}</p>
+        </div>
+        <div class="section">
+          <p style="color:var(--text-light)">⏳ Es gibt noch keinen freigegebenen Plan.</p>
+          <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+        </div>
+      </div>
+    `;
+    document.getElementById("btnLogout").addEventListener("click", logout);
+    return;
+  }
+
+  const myResponses = STATE.responses[STATE.user.id] || {};
+  const myComments  = STATE.techComments[STATE.user.id] || {};
+
+  const rows = STATE.planSundays.map(date => {
+    const my = myResponses[date] || "";
+    const myComment = myComments[date] || "";
+    const isDisabled = planPublished;
+
+    return `
+      <tr>
+        <td><strong>${fmtDateDE(date)}</strong></td>
+        <td>
+          <div class="checkbox-row">
+            <div class="checkbox-option">
+              <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} 
+                ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
+              <label for="ck_${date}">Verfügbar</label>
             </div>
           </div>
-        `;
-        document.getElementById("btnLogout").addEventListener("click", logout);
-        return;
-      }
+        </td>
+        <td>
+          <textarea ${isDisabled ? "disabled" : ""} 
+            data-date="${date}" class="tech-comment" 
+            placeholder="z.B. nur 3x, etc..."
+            style="width: 100%; min-height: 60px; font-size: 12px;">${myComment}</textarea>
+        </td>
+      </tr>
+    `;
+  }).join("");
 
-      const myResponses = STATE.responses[STATE.user.id] || {};
-      const myComments  = STATE.techComments[STATE.user.id] || {};
+  const approvedTechs = STATE.technicians.filter(t => t.approved);
 
-      const rows = STATE.planSundays.map(date => {
-        const my = myResponses[date] || "";
-        const myComment = myComments[date] || "";
-        const isDisabled = planPublished;
+  const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+  const assignedHtml = myAssigned.length
+    ? myAssigned.map(d => {
+        const teamIds = STATE.assignments[d] || [];
+        const teamNames = teamIds.map(id => {
+          if (id === STATE.user.id) return "Du";
+          const t = approvedTechs.find(x => x.id === id);
+          return t ? (t.name || t.email) : "Unbekannt";
+        });
 
         return `
-          <tr>
-            <td><strong>${fmtDateDE(date)}</strong></td>
-            <td>
-              <div class="checkbox-row">
-                <div class="checkbox-option">
-                  <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} 
-                    ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
-                  <label for="ck_${date}">Verfügbar</label>
-                </div>
-              </div>
-            </td>
-            <td>
-              <textarea ${isDisabled ? "disabled" : ""} 
-                data-date="${date}" class="tech-comment" 
-                placeholder="z.B. nur 3x, etc..."
-                style="width: 100%; min-height: 60px; font-size: 12px;">${myComment}</textarea>
-            </td>
-          </tr>
+          <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
+            <strong>📍 ${fmtDateDE(d)}</strong><br>
+            <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
+          </div>
         `;
-      }).join("");
+      }).join("")
+    : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
 
-      const approvedTechs = STATE.technicians.filter(t => t.approved);
+  const adminCommentHtml = STATE.plan?.admin_comment 
+    ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
+    : "";
 
-      const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-      const assignedHtml = myAssigned.length
-        ? myAssigned.map(d => {
-            const teamIds = STATE.assignments[d] || [];
-            const teamNames = teamIds.map(id => {
-              if (id === STATE.user.id) return "Du";
-              const t = approvedTechs.find(x => x.id === id);
-              return t ? (t.name || t.email) : "Unbekannt";
-            });
+  elApp.innerHTML = `
+    <div class="container">
+      <div class="header header-user">
+        <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+        <p>${roleLabel}</p>
+      </div>
 
-            return `
-              <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
-                <strong>📍 ${fmtDateDE(d)}</strong><br>
-                <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
-              </div>
-            `;
-          }).join("")
-        : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
+      <div class="info-box">
+        <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
+      </div>
 
-      const adminCommentHtml = STATE.plan?.admin_comment 
-        ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
-        : "";
+      ${adminCommentHtml}
 
-      elApp.innerHTML = `
-        <div class="container">
-          <div class="header header-user">
-            <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-            <p>${roleLabel}</p>
-          </div>
+      <div class="section">
+        <h2>📅 Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
+        <table>
+          <tr>
+            <th style="width:20%">Sonntag</th>
+            <th style="width:20%">Verfügbar</th>
+            <th>Sonderwünsche (nur Admin sieht das)</th>
+          </tr>
+          ${rows}
+        </table>
 
-          <div class="info-box">
-            <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
-          </div>
-
-          ${adminCommentHtml}
-
-          <div class="section">
-            <h2>📅 Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
-            <table>
-              <tr>
-                <th style="width:20%">Sonntag</th>
-                <th style="width:20%">Verfügbar</th>
-                <th>Sonderwünsche (nur Admin sieht das)</th>
-              </tr>
-              ${rows}
-            </table>
-
-            <div class="button-group" style="margin-top: 20px;">
-              <button class="btn btn-success" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>
-                💾 Verfügbarkeit speichern
-              </button>
-              <button class="btn btn-primary" id="btnMyCalendarExport">
-                📅 Meine Termine exportieren (.ics)
-              </button>
-            </div>
-          </div>
-
-          <div class="section">
-            <h2>✅ Deine zugewiesenen Termine</h2>
-            ${assignedHtml}
-          </div>
-
-          <div class="section">
-            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-          </div>
+        <div class="button-group" style="margin-top:20px;">
+          <button class="btn btn-success" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>
+            💾 Verfügbarkeit speichern
+          </button>
+          <button class="btn btn-primary" id="btnMyCalendarExport">
+            📅 Meine Termine exportieren (.ics)
+          </button>
         </div>
-      `;
+      </div>
 
-      document.getElementById("btnLogout").addEventListener("click", logout);
-      document.getElementById("btnMyCalendarExport").addEventListener("click", exportMyCalendar);
+      <div class="section">
+        <h2>✅ Deine zugewiesenen Termine</h2>
+        ${assignedHtml}
+      </div>
 
-      if (!planPublished) {
-        document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
+      <div class="section">
+        <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+      </div>
+    </div>
+  `;
 
-        elApp.querySelectorAll(".tech-comment").forEach(el => {
-          el.addEventListener("change", () => {
-            const date = el.getAttribute("data-date");
-            const comment = el.value;
-            if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
-            STATE.techComments[STATE.user.id][date] = comment;
-          });
-        });
+  document.getElementById("btnLogout").addEventListener("click", logout);
+  document.getElementById("btnMyCalendarExport").addEventListener("click", exportMyCalendar);
 
-        elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          cb.addEventListener("change", () => {
-            const date = cb.getAttribute("data-date");
-            if (cb.checked) {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "available";
-            } else {
-              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-              STATE.responses[STATE.user.id][date] = "";
-            }
-          });
-        });
-      }
-    }
+  if (!planPublished) {
+    document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
+
+    elApp.querySelectorAll(".tech-comment").forEach(el => {
+      el.addEventListener("change", () => {
+        const date = el.getAttribute("data-date");
+        const comment = el.value;
+        if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
+        STATE.techComments[STATE.user.id][date] = comment;
+      });
+    });
+
+    elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener("change", () => {
+        const date = cb.getAttribute("data-date");
+        if (cb.checked) {
+          if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+          STATE.responses[STATE.user.id][date] = "available";
+        } else {
+          if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+          STATE.responses[STATE.user.id][date] = "";
+        }
+      });
+    });
+  }
+}
+
 
     async function saveAvailability() {
       if (!STATE.plan) return;
