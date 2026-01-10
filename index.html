@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🔧 CGH Technik Planer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CGH Technik Planer</title>
 
   <!-- Supabase JS via CDN (no ESM import) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,17 +11,26 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --primary: #208085; --primary-dark: #1a6770;
-      --admin: #c01530; --admin-dark: #a01229;
-      --user: #22a344; --user-dark: #1a8637;
-      --bg: #f5f5f5; --surface: #ffffff;
-      --text: #1a1a1a; --text-light: #666;
-      --border: #e0e0e0; --success: #22a344;
-      --warning: #f0a500; --error: #c01530;
+      --primary: #208085;
+      --primary-dark: #1a6770;
+      --admin: #c01530;
+      --admin-dark: #a01229;
+      --user: #22a344;
+      --user-dark: #1a8637;
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --text: #1a1a1a;
+      --text-light: #666;
+      --border: #e0e0e0;
+      --success: #22a344;
+      --warning: #f0a500;
+      --error: #c01530;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--text); line-height: 1.6;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
     }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
     .login-container {
@@ -32,32 +41,52 @@
     .login-container h1 {
       font-size: 32px; margin-bottom: 10px;
       background: linear-gradient(135deg, var(--primary), var(--admin));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .login-container p { color: var(--text-light); margin-bottom: 20px; }
     .form-group { margin-bottom: 20px; text-align: left; }
     label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
     input, select, textarea {
-      width: 100%; padding: 12px 15px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 16px; font-family: inherit;
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: inherit;
       transition: all 0.3s ease;
     }
     textarea { resize: vertical; min-height: 80px; }
     input:focus, select:focus, textarea:focus {
-      outline: none; border-color: var(--primary);
+      outline: none;
+      border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(32,128,133,0.1);
     }
     input:disabled, textarea:disabled {
-      background: #f0f0f0; cursor: not-allowed; opacity: 0.6;
+      background: #f0f0f0;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
     .btn {
-      width: 100%; padding: 12px; border: none; border-radius: 8px;
-      font-size: 16px; font-weight: 600; cursor: pointer;
-      transition: all 0.3s ease; display: inline-flex;
-      align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .btn-primary { background: var(--primary); color: #fff; }
-    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(32,128,133,0.3); }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(32,128,133,0.3);
+    }
     .btn-success { background: var(--success); color: #fff; }
     .btn-success:hover { background: var(--user-dark); }
     .btn-danger { background: var(--error); color: #fff; }
@@ -66,37 +95,54 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .header {
-      padding: 30px 20px; border-radius: 12px; color: white;
-      margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      padding: 30px 20px;
+      border-radius: 12px;
+      color: white;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     .header-admin { background: linear-gradient(135deg, var(--admin), var(--admin-dark)); }
-    .header-user  { background: linear-gradient(135deg, var(--user), var(--user-dark)); }
+    .header-user { background: linear-gradient(135deg, var(--user), var(--user-dark)); }
     .header h1 { margin: 0; font-size: 28px; }
     .header p { margin: 5px 0 0 0; opacity: 0.95; }
 
     .badge {
-      display: inline-block; padding: 4px 12px; border-radius: 20px;
-      font-size: 11px; font-weight: 600; margin-left: 10px;
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 10px;
       background: rgba(255,255,255,0.2);
     }
+
     .section {
-      background: var(--surface); padding: 25px; border-radius: 12px;
-      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      background: var(--surface);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .section h2 { font-size: 20px; margin-bottom: 20px; }
     .section h3 { font-size: 16px; margin-bottom: 15px; }
 
     .form-row {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 15px; margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
     }
     .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th {
-      background: #f8f9fa; padding: 12px 15px; text-align: left;
-      font-weight: 600; border-bottom: 2px solid var(--border);
-      font-size: 13px; text-transform: uppercase;
+      background: #f8f9fa;
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border);
+      font-size: 13px;
+      text-transform: uppercase;
     }
     td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
     tr:hover { background: #fafafa; }
@@ -112,9 +158,14 @@
     .checkbox-option label { margin: 0; font-weight: 500; cursor: pointer; }
 
     .tech-card {
-      background: var(--surface); border: 2px solid var(--border);
-      padding: 15px; border-radius: 8px; margin-bottom: 12px;
-      display:flex; justify-content:space-between; align-items:center;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
       transition: all 0.3s ease;
     }
     .tech-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(32,128,133,0.15); }
@@ -123,45 +174,78 @@
     .tech-info p { margin:3px 0; font-size:13px; color: var(--text-light); }
 
     .role-badge {
-      display:inline-block; padding: 3px 10px; border-radius: 12px;
-      font-size: 11px; font-weight: 600; margin-right: 5px;
-      background: var(--primary); color: white;
+      display:inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 5px;
+      background: var(--primary);
+      color: white;
     }
 
     .button-group { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
     .button-group .btn { flex:1; min-width: 150px; }
 
     .tech-badge {
-      display:inline-flex; align-items:center; gap:10px;
-      background: var(--primary); color:#fff; padding: 6px 10px;
-      border-radius: 8px; font-size: 12px; margin-right: 6px; margin-bottom: 6px;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background: var(--primary);
+      color:#fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
     }
     .tech-badge .remove {
-      cursor:pointer; font-weight:700; opacity:0.95;
-      background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px;
+      cursor:pointer;
+      font-weight:700;
+      opacity:0.95;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 6px;
       user-select: none;
     }
     .tech-badge .remove:hover { opacity:1; }
 
     .info-box {
-      background: #e3f2fd; border-left: 4px solid var(--primary);
-      padding: 15px; border-radius: 8px; margin-bottom: 20px;
+      background: #e3f2fd;
+      border-left: 4px solid var(--primary);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
     }
     .info-box p { margin:0; color:#1565c0; font-size:14px; }
 
     .comment-box {
-      background: #f9f9f9; border: 1px solid var(--border);
-      padding: 12px; border-radius: 8px; margin-bottom: 15px;
+      background: #f9f9f9;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
       border-left: 4px solid var(--primary);
     }
     .comment-box strong { display: block; margin-bottom: 8px; color: var(--primary); }
     .comment-box p { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
     .fatal {
-      max-width: 1000px; margin: 40px auto; background: #fff;
-      padding: 20px; border-radius: 12px; border: 2px solid var(--error);
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid var(--error);
     }
-    .fatal pre { white-space: pre-wrap; background:#f7f7f7; padding:10px; border-radius:8px; overflow:auto; margin-top:10px; }
+    .fatal pre {
+      white-space: pre-wrap;
+      background:#f7f7f7;
+      padding:10px;
+      border-radius:8px;
+      overflow:auto;
+      margin-top:10px;
+    }
 
     @media (max-width: 768px) {
       .form-row { grid-template-columns: 1fr; }
@@ -183,11 +267,11 @@
 
   <script>
     // ========= SUPABASE CONFIG =========
-    const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
+    const SUPABASEURL = "https://orcpugfqltiljnvlitsn.supabase.co";
+    const SUPABASEKEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
 
     const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = createClient(SUPABASEURL, SUPABASEKEY);
 
     const elApp = document.getElementById("app");
 
@@ -196,7 +280,7 @@
       elApp.innerHTML = `
         <div class="fatal">
           <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler in der App</h2>
-          <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+          <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken</p>
           <pre>${String(message)}\n${String(source)}:${lineno}:${colno}</pre>
         </div>
       `;
@@ -204,12 +288,12 @@
     };
 
     window.addEventListener("unhandledrejection", (event) => {
-      const msg = (event?.reason?.message) ? event.reason.message : String(event.reason || "Unbekannter Promise-Fehler");
+      const msg = event?.reason?.message ? event.reason.message : String(event.reason || "Unbekannter Promise-Fehler");
       if (elApp) {
         elApp.innerHTML = `
           <div class="fatal">
-            <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler (Promise)</h2>
-            <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+            <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler Promise</h2>
+            <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken</p>
             <pre>${msg}</pre>
           </div>
         `;
@@ -246,7 +330,7 @@
       if (!STATE.user) return null;
       const { data, error } = await sb
         .from("profiles")
-        .select("id,email,name,role,approved,tech_role,created_at")
+        .select("id,email,name,role,approved,techrole,createdat")
         .eq("id", STATE.user.id)
         .maybeSingle();
       if (error) throw error;
@@ -257,10 +341,9 @@
     async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
-        .select("id,status,created_at,created_by,published,admin_comment")
-        .order("created_at", { ascending: false })
+        .select("id,status,createdat,createdby,published,admincomment")
+        .order("createdat", { ascending: false })
         .limit(1);
-
       if (!isAdmin) q = q.eq("published", true);
 
       const { data, error } = await q;
@@ -273,9 +356,9 @@
       }
 
       const { data: sundays, error: e2 } = await sb
-        .from("plan_sundays")
+        .from("plansundays")
         .select("sunday")
-        .eq("plan_id", STATE.plan.id)
+        .eq("planid", STATE.plan.id)
         .order("sunday", { ascending: true });
       if (e2) throw e2;
 
@@ -286,11 +369,10 @@
     async function fetchTechnicians() {
       const { data, error } = await sb
         .from("profiles")
-        .select("id,email,name,role,approved,tech_role,created_at")
+        .select("id,email,name,role,approved,techrole,createdat")
         .eq("role", "tech")
-        .order("created_at", { ascending: true });
+        .order("createdat", { ascending: true });
       if (error) throw error;
-
       STATE.technicians = data || [];
       return STATE.technicians;
     }
@@ -305,36 +387,36 @@
 
       const { data: resp, error: e1 } = await sb
         .from("responses")
-        .select("tech_id,sunday,response,tech_comment")
-        .eq("plan_id", STATE.plan.id);
+        .select("techid,sunday,response,techcomment")
+        .eq("planid", STATE.plan.id);
       if (e1) throw e1;
 
       const respMap = {};
       const commMap = {};
       (resp || []).forEach(r => {
-        if (!respMap[r.tech_id]) respMap[r.tech_id] = {};
-        if (!commMap[r.tech_id]) commMap[r.tech_id] = {};
-        respMap[r.tech_id][r.sunday] = r.response;
-        commMap[r.tech_id][r.sunday] = r.tech_comment || "";
+        if (!respMap[r.techid]) respMap[r.techid] = {};
+        if (!commMap[r.techid]) commMap[r.techid] = {};
+        respMap[r.techid][r.sunday] = r.response;
+        commMap[r.techid][r.sunday] = r.techcomment || "";
       });
       STATE.responses = respMap;
       STATE.techComments = commMap;
 
       const { data: asg, error: e2 } = await sb
         .from("assignments")
-        .select("sunday,tech_ids")
-        .eq("plan_id", STATE.plan.id);
+        .select("sunday,techids")
+        .eq("planid", STATE.plan.id);
       if (e2) throw e2;
 
       const asgMap = {};
-      (asg || []).forEach(a => { asgMap[a.sunday] = a.tech_ids || []; });
+      (asg || []).forEach(a => { asgMap[a.sunday] = a.techids || []; });
       STATE.assignments = asgMap;
     }
 
     function renderLogin() {
       elApp.innerHTML = `
         <div class="login-container">
-          <h1>🔧 CGH Technik</h1>
+          <h1>CGH Technik</h1>
           <p>Professionelle Planung für dein Technik-Team</p>
 
           <div class="form-group">
@@ -347,7 +429,7 @@
             <input type="password" id="pass" placeholder="Dein Passwort">
           </div>
 
-          <button class="btn btn-primary" id="btnLogin">🚀 Anmelden</button>
+          <button class="btn btn-primary" id="btnLogin">Anmelden</button>
 
           <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
             Noch kein Konto? <a href="#" id="showRegister">Jetzt registrieren</a>
@@ -365,7 +447,7 @@
     function renderRegister() {
       elApp.innerHTML = `
         <div class="login-container">
-          <h1>📝 Registrierung</h1>
+          <h1>Registrierung</h1>
           <p>Nach der Registrierung muss dich der Admin freischalten.</p>
 
           <div class="form-group">
@@ -383,7 +465,7 @@
             <input type="password" id="pass" placeholder="Mind. 8 Zeichen">
           </div>
 
-          <button class="btn btn-primary" id="btnRegister">✅ Registrieren</button>
+          <button class="btn btn-primary" id="btnRegister">Registrieren</button>
 
           <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
             Schon ein Konto? <a href="#" id="showLogin">Zum Login</a>
@@ -421,12 +503,10 @@
       if (error) return toast("Registrierung fehlgeschlagen: " + error.message);
 
       try {
-        if (data.user && data.user.id) {
-          await sb.from("profiles").update({ name }).eq("id", data.user.id);
-        }
+        if (data.user && data.user.id) await sb.from("profiles").update({ name }).eq("id", data.user.id);
       } catch (_) {}
 
-      toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
+      toast("Registriert! Bitte warten bis der Admin dich freischaltet.");
       await safeLoadSession();
       await safeRoute();
     }
@@ -443,7 +523,7 @@
       elApp.innerHTML = `
         <div class="container">
           <div class="header header-user">
-            <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
+            <h1>Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
             <p>${STATE.profile.email}</p>
           </div>
 
@@ -452,7 +532,7 @@
             <p style="color: var(--text-light);">
               Dein Konto wurde angelegt, aber muss noch vom Admin freigeschaltet werden.
             </p>
-            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+            <button class="btn btn-primary" id="btnLogout">Abmelden</button>
           </div>
         </div>
       `;
@@ -460,163 +540,154 @@
     }
 
     function techRoleLabel(p) {
-      if (p.tech_role === "ton") return "🎤 Ton Techniker";
-      if (p.tech_role === "video") return "📹 Video Techniker";
-      if (p.tech_role === "both") return "🎤📹 Allrounder";
+      if (p.techrole === "ton") return "Ton Techniker";
+      if (p.techrole === "video") return "Video Techniker";
+      if (p.techrole === "both") return "Allrounder";
       return "Techniker";
     }
 
     function renderTech() {
-  const roleLabel = techRoleLabel(STATE.profile);
-  const planPublished = STATE.plan?.published || false;
+      const roleLabel = techRoleLabel(STATE.profile);
+      const planPublished = STATE.plan?.published || false;
 
-  if (!STATE.plan) {
-    elApp.innerHTML = `
-      <div class="container">
-        <div class="header header-user">
-          <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-          <p>${roleLabel}</p>
-        </div>
-        <div class="section">
-          <p style="color:var(--text-light)">⏳ Es gibt noch keinen freigegebenen Plan.</p>
-          <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-        </div>
-      </div>
-    `;
-    document.getElementById("btnLogout").addEventListener("click", logout);
-    return;
-  }
-
-  const myResponses = STATE.responses[STATE.user.id] || {};
-  const myComments  = STATE.techComments[STATE.user.id] || {};
-
-  const rows = STATE.planSundays.map(date => {
-    const my = myResponses[date] || "";
-    const myComment = myComments[date] || "";
-    const isDisabled = planPublished;
-
-    return `
-      <tr>
-        <td><strong>${fmtDateDE(date)}</strong></td>
-        <td>
-          <div class="checkbox-row">
-            <div class="checkbox-option">
-              <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} 
-                ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
-              <label for="ck_${date}">Verfügbar</label>
+      if (!STATE.plan) {
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="header header-user">
+              <h1>Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+              <p>${roleLabel}</p>
+            </div>
+            <div class="section">
+              <p style="color:var(--text-light)">Es gibt noch keinen freigegebenen Plan.</p>
+              <button class="btn btn-primary" id="btnLogout">Abmelden</button>
             </div>
           </div>
-        </td>
-        <td>
-          <textarea ${isDisabled ? "disabled" : ""} 
-            data-date="${date}" class="tech-comment" 
-            placeholder="z.B. nur 3x, etc..."
-            style="width: 100%; min-height: 60px; font-size: 12px;">${myComment}</textarea>
-        </td>
-      </tr>
-    `;
-  }).join("");
+        `;
+        document.getElementById("btnLogout").addEventListener("click", logout);
+        return;
+      }
 
-  const approvedTechs = STATE.technicians.filter(t => t.approved);
+      const myResponses = STATE.responses[STATE.user.id] || {};
+      const myComments = STATE.techComments[STATE.user.id] || {};
 
-  const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-  const assignedHtml = myAssigned.length
-    ? myAssigned.map(d => {
-        const teamIds = STATE.assignments[d] || [];
-        const teamNames = teamIds.map(id => {
-          if (id === STATE.user.id) return "Du";
-          const t = approvedTechs.find(x => x.id === id);
-          return t ? (t.name || t.email) : "Unbekannt";
-        });
+      const rows = STATE.planSundays.map(date => {
+        const my = myResponses[date];
+        const myComment = myComments[date];
+        const isDisabled = planPublished;
 
         return `
-          <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
-            <strong>📍 ${fmtDateDE(d)}</strong><br>
-            <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
-          </div>
-        `;
-      }).join("")
-    : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
-
-  const adminCommentHtml = STATE.plan?.admin_comment 
-    ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
-    : "";
-
-  elApp.innerHTML = `
-    <div class="container">
-      <div class="header header-user">
-        <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
-        <p>${roleLabel}</p>
-      </div>
-
-      <div class="info-box">
-        <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
-      </div>
-
-      ${adminCommentHtml}
-
-      <div class="section">
-        <h2>📅 Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
-        <table>
           <tr>
-            <th style="width:20%">Sonntag</th>
-            <th style="width:20%">Verfügbar</th>
-            <th>Sonderwünsche (nur Admin sieht das)</th>
+            <td><strong>${fmtDateDE(date)}</strong></td>
+            <td>
+              <div class="checkbox-row">
+                <div class="checkbox-option">
+                  <input type="checkbox" id="ck_${date}" ${my === "available" ? "checked" : ""} ${isDisabled ? "disabled" : ""} data-date="${date}" data-value="available">
+                  <label for="ck_${date}">Verfügbar</label>
+                </div>
+              </div>
+            </td>
+            <td>
+              <textarea ${isDisabled ? "disabled" : ""} data-date="${date}" class="tech-comment" placeholder="z.B. nur 3x, etc..." style="width: 100%; min-height: 60px; font-size: 12px;">${myComment || ""}</textarea>
+            </td>
           </tr>
-          ${rows}
-        </table>
+        `;
+      }).join("");
 
-        <div class="button-group" style="margin-top:20px;">
-          <button class="btn btn-success" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>
-            💾 Verfügbarkeit speichern
-          </button>
-          <button class="btn btn-primary" id="btnMyCalendarExport">
-            📅 Meine Termine exportieren (.ics)
-          </button>
+      const approvedTechs = STATE.technicians.filter(t => t.approved);
+
+      const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+      const assignedHtml = myAssigned.length
+        ? myAssigned.map(d => {
+            const teamIds = STATE.assignments[d] || [];
+            const teamNames = teamIds.map(id => {
+              if (id === STATE.user.id) return "Du";
+              const t = approvedTechs.find(x => x.id === id);
+              return t ? (t.name || t.email) : "Unbekannt";
+            });
+
+            return `
+              <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
+                <strong>${fmtDateDE(d)}</strong><br>
+                <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
+              </div>
+            `;
+          }).join("")
+        : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
+
+      const adminCommentHtml = STATE.plan?.admincomment
+        ? `<div class="comment-box"><strong>Admin-Info:</strong><p>${STATE.plan.admincomment}</p></div>`
+        : "";
+
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-user">
+            <h1>Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+            <p>${roleLabel}</p>
+          </div>
+
+          <div class="info-box">
+            <p>Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
+          </div>
+
+          ${adminCommentHtml}
+
+          <div class="section">
+            <h2>Deine Verfügbarkeit ${planPublished ? '<span style="color: var(--warning);">Gesperrt</span>' : ''}</h2>
+            <table>
+              <tr>
+                <th style="width:20%">Sonntag</th>
+                <th style="width:20%">Verfügbar</th>
+                <th>Sonderwünsche (nur Admin sieht das)</th>
+              </tr>
+              ${rows}
+            </table>
+
+            <div class="button-group" style="margin-top:20px;">
+              <button class="btn btn-success" id="btnSaveAvail" ${planPublished ? "disabled" : ""}>Verfügbarkeit speichern</button>
+              <button class="btn btn-primary" id="btnMyCalendarExport">Meine Termine exportieren (.ics)</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Deine zugewiesenen Termine</h2>
+            ${assignedHtml}
+          </div>
+
+          <div class="section">
+            <button class="btn btn-primary" id="btnLogout">Abmelden</button>
+          </div>
         </div>
-      </div>
+      `;
 
-      <div class="section">
-        <h2>✅ Deine zugewiesenen Termine</h2>
-        ${assignedHtml}
-      </div>
+      document.getElementById("btnLogout").addEventListener("click", logout);
+      document.getElementById("btnMyCalendarExport").addEventListener("click", exportMyCalendar);
 
-      <div class="section">
-        <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
-      </div>
-    </div>
-  `;
+      if (!planPublished) {
+        document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
 
-  document.getElementById("btnLogout").addEventListener("click", logout);
-  document.getElementById("btnMyCalendarExport").addEventListener("click", exportMyCalendar);
+        elApp.querySelectorAll(".tech-comment").forEach(el => {
+          el.addEventListener("change", () => {
+            const date = el.getAttribute("data-date");
+            const comment = el.value;
+            if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
+            STATE.techComments[STATE.user.id][date] = comment;
+          });
+        });
 
-  if (!planPublished) {
-    document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
-
-    elApp.querySelectorAll(".tech-comment").forEach(el => {
-      el.addEventListener("change", () => {
-        const date = el.getAttribute("data-date");
-        const comment = el.value;
-        if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
-        STATE.techComments[STATE.user.id][date] = comment;
-      });
-    });
-
-    elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      cb.addEventListener("change", () => {
-        const date = cb.getAttribute("data-date");
-        if (cb.checked) {
-          if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-          STATE.responses[STATE.user.id][date] = "available";
-        } else {
-          if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-          STATE.responses[STATE.user.id][date] = "";
-        }
-      });
-    });
-  }
-}
-
+        elApp.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          cb.addEventListener("change", () => {
+            const date = cb.getAttribute("data-date");
+            if (cb.checked) {
+              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+              STATE.responses[STATE.user.id][date] = "available";
+            } else {
+              if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+              STATE.responses[STATE.user.id][date] = "";
+            }
+          });
+        });
+      }
+    }
 
     async function saveAvailability() {
       if (!STATE.plan) return;
@@ -625,33 +696,30 @@
       const myComments = STATE.techComments[STATE.user.id] || {};
 
       const rows = Object.entries(my).map(([sunday, response]) => ({
-        plan_id: STATE.plan.id,
-        tech_id: STATE.user.id,
+        planid: STATE.plan.id,
+        techid: STATE.user.id,
         sunday,
         response: response === "available" ? "green" : "red",
-        tech_comment: myComments[sunday] || ""
+        techcomment: myComments[sunday] || ""
       }));
 
       const { error } = await sb
         .from("responses")
-        .upsert(rows, { onConflict: "plan_id,tech_id,sunday" });
+        .upsert(rows, { onConflict: "planid,techid,sunday" });
 
       if (error) return toast("Fehler: " + error.message);
 
-      toast("✅ Gespeichert!");
+      toast("Gespeichert!");
       await fetchResponsesAndAssignments();
       renderTech();
     }
 
-    // === NEU: Techniker exportiert nur eigene Termine ===
+    // NEU: Techniker exportiert nur eigene Termine
     function exportMyCalendar() {
       if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan vorhanden.");
 
       const myDates = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-
-      if (myDates.length === 0) {
-        return toast("Du hast aktuell keine zugewiesenen Termine im Plan.");
-      }
+      if (myDates.length === 0) return toast("Du hast aktuell keine zugewiesenen Termine im Plan.");
 
       let ical = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -683,7 +751,7 @@ END:VTIMEZONE
         const ids = STATE.assignments[date] || [];
         const names = ids.map(id => {
           const t = techs.find(x => x.id === id);
-          return (t ? (t.name || t.email) : "?");
+          return t ? (t.name || t.email) : "?";
         }).join(", ");
 
         const d = new Date(date + "T18:00:00");
@@ -695,7 +763,7 @@ UID:${STATE.plan.id}-${date}-${STATE.user.id}@cgh-technik
 DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
 DTSTART:${dtstart}
 DTEND:${dtend}
-SUMMARY:🎤 CGH Technik - ${fmtDateDE(date)}
+SUMMARY:CGH Technik - ${fmtDateDE(date)}
 DESCRIPTION:Team: ${names || "noch nicht zugewiesen"}
 LOCATION:CGH Stuttgart
 STATUS:CONFIRMED
@@ -714,7 +782,7 @@ END:VEVENT
       link.click();
       URL.revokeObjectURL(url);
 
-      toast("✅ Deine Termine wurden exportiert!");
+      toast("Deine Termine wurden exportiert!");
     }
 
     async function publishPlan() {
@@ -724,7 +792,7 @@ END:VEVENT
         .update({ published: true })
         .eq("id", STATE.plan.id);
       if (error) return toast("Fehler: " + error.message);
-      toast("✅ Plan freigegeben. Techniker können nicht mehr ändern!");
+      toast("Plan freigegeben. Techniker können nicht mehr ändern!");
       await refreshAdmin();
     }
 
@@ -734,18 +802,16 @@ END:VEVENT
       const techCards = STATE.technicians.map(t => `
         <div class="tech-card">
           <div class="tech-info">
-            <h4>${t.name || "(kein Name)"} ${t.approved ? "✅" : "⏳"}</h4>
+            <h4>${t.name || "kein Name"} ${t.approved ? "✅" : "⏳"}</h4>
             <p>
               <span class="role-badge">${
-                t.tech_role === "ton" ? "🎤 Ton" :
-                t.tech_role === "video" ? "📹 Video" :
-                t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"
+                t.techrole === "ton" ? "Ton" :
+                t.techrole === "video" ? "Video" :
+                t.techrole === "both" ? "Beides" : "Rolle"
               }</span>
               ${t.email}
             </p>
-            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
-              Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}
-            </p>
+            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
             <button class="btn btn-success btn-small btn-approve" data-id="${t.id}" data-approved="true">Freigeben</button>
@@ -757,16 +823,16 @@ END:VEVENT
       elApp.innerHTML = `
         <div class="container">
           <div class="header header-admin">
-            <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
+            <h1>Admin Dashboard <span class="badge">ADMIN</span></h1>
             <p>${STATE.profile.email}</p>
           </div>
 
           <div class="info-box">
-            <p>✅ Angemeldet als <strong>${STATE.profile.email}</strong> (Admin)</p>
+            <p>Angemeldet als <strong>${STATE.profile.email}</strong> (Admin)</p>
           </div>
 
           <div class="section">
-            <h3>👥 Freischaltung & Rollen</h3>
+            <h3>Freischaltung & Rollen</h3>
 
             <div class="form-row three">
               <select id="selTech">
@@ -776,15 +842,15 @@ END:VEVENT
               <input id="inpName" type="text" placeholder="Name setzen (optional)">
               <select id="selTechRole">
                 <option value="">-- Technik Rolle --</option>
-                <option value="ton">🎤 Ton</option>
-                <option value="video">📹 Video</option>
-                <option value="both">🎤📹 Beides</option>
+                <option value="ton">Ton</option>
+                <option value="video">Video</option>
+                <option value="both">Beides</option>
               </select>
             </div>
 
             <div class="button-group">
-              <button class="btn btn-primary btn-small" id="btnSaveMeta">💾 Name/Rolle speichern</button>
-              <button class="btn btn-primary btn-small" id="btnRefresh">🔄 Aktualisieren</button>
+              <button class="btn btn-primary btn-small" id="btnSaveMeta">Name/Rolle speichern</button>
+              <button class="btn btn-primary btn-small" id="btnRefresh">Aktualisieren</button>
             </div>
 
             <div style="margin-top:18px;max-height:360px;overflow:auto;">
@@ -793,27 +859,27 @@ END:VEVENT
           </div>
 
           <div class="section">
-            <h3>🆕 Neuen Plan erstellen</h3>
+            <h3>Neuen Plan erstellen</h3>
             <div class="form-row">
               <input id="planStart" type="date">
               <input id="planWeeks" type="number" value="4" min="1" max="12">
             </div>
             <div class="form-group">
               <label>Admin-Kommentar (z.B. Singteam, Abendmahl, etc.)</label>
-              <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee & Kuchen" style="min-height: 80px;"></textarea>
+              <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee Kuchen" style="min-height: 80px;"></textarea>
             </div>
-            <button class="btn btn-primary" id="btnCreatePlan">📅 Plan erstellen</button>
+            <button class="btn btn-primary" id="btnCreatePlan">Plan erstellen</button>
           </div>
 
           ${plan ? renderAdminPlan() : `
             <div class="section">
-              <h3>📅 Kein Plan vorhanden</h3>
+              <h3>Kein Plan vorhanden</h3>
               <p style="color:var(--text-light)">Erstelle unten einen neuen Plan.</p>
             </div>
           `}
 
           <div class="section">
-            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+            <button class="btn btn-primary" id="btnLogout">Abmelden</button>
           </div>
         </div>
       `;
@@ -838,14 +904,12 @@ END:VEVENT
       const plan = STATE.plan;
       const techs = STATE.technicians.filter(t => t.approved);
 
-      const tableHeader = techs.map(t =>
-        `<th>${(t.name || t.email)} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`
-      ).join("");
+      const tableHeader = techs.map(t => `<th>${t.name || t.email}</th>`).join("");
 
       const rows = STATE.planSundays.map(date => {
         const tds = techs.map(t => {
           const resp = (STATE.responses[t.id] || {})[date];
-          const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : "⏳";
+          const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : "";
           return `<td class="response-cell">${emoji}</td>`;
         }).join("");
         return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
@@ -855,9 +919,7 @@ END:VEVENT
         const comments = [];
         techs.forEach(t => {
           const comment = (STATE.techComments[t.id] || {})[date];
-          if (comment) {
-            comments.push(`<strong>${t.name || t.email}:</strong> ${comment}`);
-          }
+          if (comment) comments.push(`<strong>${t.name || t.email}</strong> ${comment}`);
         });
         return `
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary);">
@@ -868,37 +930,32 @@ END:VEVENT
       }).join("");
 
       const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
-      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
+      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email}</option>`).join("");
 
       const assignmentsOverview = STATE.planSundays.map(date => {
         const ids = STATE.assignments[date] || [];
         const names = ids.map(id => {
           const t = techs.find(x => x.id === id);
-          return (t ? (t.name || t.email) : "?");
+          return t ? (t.name || t.email) : "?";
         }).join(" + ");
         return `
           <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
-            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
+            <strong>${fmtDateDE(date)}</strong> ${names || "Noch nicht zugewiesen"}
           </div>
         `;
       }).join("");
 
-      const pubBadge = plan.published
-        ? `<span class="badge">VERÖFFENTLICHT</span>`
-        : `<span class="badge">DRAFT</span>`;
-
-      const pubButton = plan.published
-        ? ``
-        : `<button class="btn btn-success btn-small" id="btnPublishPlan">✅ Plan freigeben</button>`;
+      const pubBadge = plan.published ? `<span class="badge">VERÖFFENTLICHT</span>` : `<span class="badge">DRAFT</span>`;
+      const pubButton = plan.published ? `` : `<button class="btn btn-success btn-small" id="btnPublishPlan">Plan freigeben</button>`;
 
       return `
         <div class="section" id="adminPlanSection">
-          <h3>📊 Aktueller Plan ${pubBadge} - Status: <strong>${plan.status}</strong></h3>
+          <h3>Aktueller Plan ${pubBadge} - Status <strong>${plan.status}</strong></h3>
           <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
-            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+            Erstellt ${new Date(plan.createdat).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
           </p>
 
-          ${plan.admin_comment ? `<div class="comment-box"><strong>💬 Admin-Kommentar:</strong><p>${plan.admin_comment}</p></div>` : ""}
+          ${plan.admincomment ? `<div class="comment-box"><strong>Admin-Kommentar</strong><p>${plan.admincomment}</p></div>` : ""}
 
           <div class="plan-table">
             <table>
@@ -912,19 +969,19 @@ END:VEVENT
 
           <div class="button-group">
             ${pubButton}
-            <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
-            <button class="btn btn-primary btn-small" id="btnCalendarExport">📅 Kalender Export (.ics)</button>
-            <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
+            <button class="btn btn-success btn-small" id="btnAutoAssign">Auto-Zuweisung</button>
+            <button class="btn btn-primary btn-small" id="btnCalendarExport">Kalender Export (.ics)</button>
+            <button class="btn btn-danger btn-small" id="btnDeletePlan">Plan löschen</button>
           </div>
         </div>
 
         <div class="section">
-          <h3>💬 Sonderwünsche der Techniker</h3>
+          <h3>Sonderwünsche der Techniker</h3>
           ${techCommentsHtml || '<p style="color: var(--text-light);">Noch keine Sonderwünsche eingetragen</p>'}
         </div>
 
         <div class="section">
-          <h3>🔧 Manuelle Anpassung</h3>
+          <h3>Manuelle Anpassung</h3>
           <div class="form-row three">
             <select id="manualDate">
               <option value="">-- Sonntag wählen --</option>
@@ -934,13 +991,13 @@ END:VEVENT
               <option value="">-- Techniker wählen --</option>
               ${manualTechOptions}
             </select>
-            <button class="btn btn-success btn-small" style="width:100%" id="btnManualAdd">➕ Hinzufügen</button>
+            <button class="btn btn-success btn-small" style="width:100%" id="btnManualAdd">Hinzufügen</button>
           </div>
           <div id="manualList"></div>
         </div>
 
         <div class="section">
-          <h3>✅ Zuweisungen Übersicht</h3>
+          <h3>Zuweisungen Übersicht</h3>
           ${assignmentsOverview}
         </div>
       `;
@@ -972,27 +1029,27 @@ END:VEVENT
     async function saveTechMeta() {
       const id = document.getElementById("selTech").value;
       const name = document.getElementById("inpName").value.trim();
-      const tech_role = document.getElementById("selTechRole").value;
+      const techrole = document.getElementById("selTechRole").value;
 
       if (!id) return toast("Bitte Techniker wählen.");
 
       const payload = {};
       if (name) payload.name = name;
-      if (tech_role) payload.tech_role = tech_role;
-
+      if (techrole) payload.techrole = techrole;
       if (Object.keys(payload).length === 0) return toast("Nichts zu speichern.");
 
       const { error } = await sb.from("profiles").update(payload).eq("id", id);
       if (error) return toast("Fehler: " + error.message);
 
       await refreshAdmin();
-      toast("✅ Gespeichert.");
+      toast("Gespeichert.");
     }
 
     async function createPlan() {
       const startStr = document.getElementById("planStart").value;
       const weeks = parseInt(document.getElementById("planWeeks").value, 10);
       const adminComment = document.getElementById("adminComment").value.trim();
+
       if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
 
       let current = new Date(startStr + "T12:00:00");
@@ -1010,16 +1067,16 @@ END:VEVENT
 
       const { data: plan, error: e1 } = await sb
         .from("plans")
-        .insert([{ status: "responses_pending", created_by: STATE.user.id, admin_comment: adminComment }])
-        .select("id,status,created_at,created_by,published,admin_comment")
+        .insert([{ status: "responses_pending", createdby: STATE.user.id, admincomment: adminComment }])
+        .select("id,status,createdat,createdby,published,admincomment")
         .single();
       if (e1) return toast("Plan Fehler: " + e1.message);
 
-      const rows = sundays.map(s => ({ plan_id: plan.id, sunday: s }));
-      const { error: e2 } = await sb.from("plan_sundays").insert(rows);
+      const rows = sundays.map(s => ({ planid: plan.id, sunday: s }));
+      const { error: e2 } = await sb.from("plansundays").insert(rows);
       if (e2) return toast("Sonntage Fehler: " + e2.message);
 
-      toast("✅ Plan erstellt (Draft). Erst nach Freigabe sehen Techniker ihn.");
+      toast("Plan erstellt (Draft). Erst nach Freigabe sehen Techniker ihn.");
       await refreshAdmin();
     }
 
@@ -1030,7 +1087,7 @@ END:VEVENT
       const { error } = await sb.from("plans").delete().eq("id", STATE.plan.id);
       if (error) return toast("Fehler: " + error.message);
 
-      toast("✅ Plan gelöscht.");
+      toast("Plan gelöscht.");
       await refreshAdmin();
     }
 
@@ -1084,4 +1141,194 @@ END:VEVENT
 
       const { error } = await sb
         .from("assignments")
-        .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids:
+        .upsert([{ planid: STATE.plan.id, sunday: date, techids: newIds }], { onConflict: "planid,sunday" });
+      if (error) return toast("Fehler: " + error.message);
+
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    }
+
+    async function manualRemove(date, techId) {
+      if (!STATE.plan) return;
+      const existing = STATE.assignments[date] || [];
+      const newIds = existing.filter(id => id !== techId);
+
+      const { error } = await sb
+        .from("assignments")
+        .upsert([{ planid: STATE.plan.id, sunday: date, techids: newIds }], { onConflict: "planid,sunday" });
+      if (error) return toast("Fehler: " + error.message);
+
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    }
+
+    async function autoAssign() {
+      if (!STATE.plan) return;
+
+      const techs = STATE.technicians.filter(t => t.approved);
+      const respByTech = STATE.responses;
+
+      function score(tid, date) {
+        const r = (respByTech[tid] || {})[date];
+        if (r === "green") return 2;
+        if (r === "yellow") return 1;
+        if (r === "red") return -5;
+        return 0;
+      }
+
+      for (const date of STATE.planSundays) {
+        const ton = techs
+          .filter(t => t.techrole === "ton" || t.techrole === "both")
+          .map(t => ({ t, s: score(t.id, date) }))
+          .sort((a,b) => b.s - a.s)[0]?.t;
+
+        const video = techs
+          .filter(t => (t.techrole === "video" || t.techrole === "both") && t.id !== ton?.id)
+          .map(t => ({ t, s: score(t.id, date) }))
+          .sort((a,b) => b.s - a.s)[0]?.t;
+
+        const ids = [];
+        if (ton) ids.push(ton.id);
+        if (video) ids.push(video.id);
+
+        const { error } = await sb
+          .from("assignments")
+          .upsert([{ planid: STATE.plan.id, sunday: date, techids: ids }], { onConflict: "planid,sunday" });
+
+        if (error) return toast("Fehler: " + error.message);
+      }
+
+      toast("Auto-Zuweisung fertig.");
+      await fetchResponsesAndAssignments();
+      renderAdmin();
+    }
+
+    function exportCalendar() {
+      if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan vorhanden.");
+
+      let ical = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//CGH Technik Planer//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:CGH Technik Plan
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:STANDARD
+DTSTART:19961027T030000
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:19810329T020000
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+END:VTIMEZONE
+`;
+
+      STATE.planSundays.forEach(date => {
+        const ids = STATE.assignments[date] || [];
+        const techs = STATE.technicians.filter(t => t.approved);
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return t ? (t.name || t.email) : "?";
+        }).join(", ");
+
+        const d = new Date(date + "T18:00:00");
+        const dtstart = d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+        const dtend = new Date(d.getTime() + 3 * 60 * 60000).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+        ical += `BEGIN:VEVENT
+UID:${STATE.plan.id}-${date}@cgh-technik
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:CGH Technik - ${fmtDateDE(date)}
+DESCRIPTION:Team: ${names || "noch nicht zugewiesen"}
+LOCATION:CGH Stuttgart
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+`;
+      });
+
+      ical += `END:VCALENDAR`;
+
+      const blob = new Blob([ical], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `CGH-Technik-Plan-${STATE.plan.id}.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast("Kalender exportiert!");
+    }
+
+    async function route() {
+      await safeLoadSession();
+      if (!STATE.user) return renderLogin();
+
+      await fetchMyProfile();
+
+      if (!STATE.profile) {
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="fatal">
+              <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
+              <p style="margin:0;color:var(--text-light)">
+                Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
+              </p>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-primary" id="btnLogout">Abmelden</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById("btnLogout").addEventListener("click", logout);
+        return;
+      }
+
+      const isAdmin = STATE.profile.role === "admin";
+
+      if (isAdmin) {
+        await fetchTechnicians();
+        await fetchCurrentPlan(true);
+        await fetchResponsesAndAssignments();
+        return renderAdmin();
+      }
+
+      if (!STATE.profile.approved) return renderPending();
+
+      await fetchTechnicians();
+      await fetchCurrentPlan(false);
+      await fetchResponsesAndAssignments();
+      return renderTech();
+    }
+
+    async function safeRoute() {
+      try {
+        await route();
+      } catch (e) {
+        const msg = e?.message ? e.message : String(e);
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="fatal">
+              <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler beim Laden</h2>
+              <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken</p>
+              <pre>${msg}</pre>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    sb.auth.onAuthStateChange(() => safeRoute());
+    safeRoute();
+  </script>
+</body>
+</html>
