@@ -48,7 +48,7 @@
     }
     .login-container p { color: var(--text-light); margin-bottom: 20px; }
     .form-group { margin-bottom: 20px; text-align: left; }
-    label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
     input, select, textarea {
       width: 100%;
       padding: 12px 15px;
@@ -152,7 +152,7 @@
     .date-cell { font-weight: 600; background: #f8f9fa; }
     .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
 
-    .color-row { display:flex; gap:10px; margin:15px 0; justify-content:center; }
+    .color-row { display: flex; gap: 10px; margin: 15px 0; justify-content: center; }
     .color-option {
       width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
       border: 3px solid transparent; transition: all 0.3s ease;
@@ -161,17 +161,17 @@
     .color-option:hover { transform: scale(1.1); }
     .color-option.selected::after {
       content: "✓";
-      position:absolute;
-      top:50%; left:50%;
+      position: absolute;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       font-size: 22px;
       font-weight: 900;
       color: #000;
     }
     .color-option[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
-    .color-red { background:#ffcdd2; border-color:#ef5350; }
-    .color-yellow { background:#fff9c4; border-color:#fbc02d; }
-    .color-green { background:#c8e6c9; border-color:#43a047; }
+    .color-red { background: #ffcdd2; border-color: #ef5350; }
+    .color-yellow { background: #fff9c4; border-color: #fbc02d; }
+    .color-green { background: #c8e6c9; border-color: #43a047; }
 
     .tech-card {
       background: var(--surface);
@@ -179,18 +179,18 @@
       padding: 15px;
       border-radius: 8px;
       margin-bottom: 12px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       transition: all 0.3s ease;
     }
     .tech-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(32,128,133,0.15); }
     .tech-info { flex: 1; }
-    .tech-info h4 { margin:0 0 5px 0; font-size:16px; }
-    .tech-info p { margin:3px 0; font-size:13px; color: var(--text-light); }
+    .tech-info h4 { margin: 0 0 5px 0; font-size: 16px; }
+    .tech-info p { margin: 3px 0; font-size: 13px; color: var(--text-light); }
 
     .role-badge {
-      display:inline-block;
+      display: inline-block;
       padding: 3px 10px;
       border-radius: 12px;
       font-size: 11px;
@@ -200,15 +200,15 @@
       color: white;
     }
 
-    .button-group { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
-    .button-group .btn { flex:1; min-width: 150px; }
+    .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .button-group .btn { flex: 1; min-width: 150px; }
 
     .tech-badge {
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       background: var(--primary);
-      color:#fff;
+      color: #fff;
       padding: 6px 10px;
       border-radius: 8px;
       font-size: 12px;
@@ -216,15 +216,15 @@
       margin-bottom: 6px;
     }
     .tech-badge .remove {
-      cursor:pointer;
-      font-weight:700;
-      opacity:0.95;
+      cursor: pointer;
+      font-weight: 700;
+      opacity: 0.95;
       background: rgba(255,255,255,0.2);
       padding: 2px 8px;
       border-radius: 6px;
       user-select: none;
     }
-    .tech-badge .remove:hover { opacity:1; }
+    .tech-badge .remove:hover { opacity: 1; }
 
     .info-box {
       background: #e3f2fd;
@@ -233,7 +233,7 @@
       border-radius: 8px;
       margin-bottom: 20px;
     }
-    .info-box p { margin:0; color:#1565c0; font-size:14px; }
+    .info-box p { margin: 0; color: #1565c0; font-size: 14px; }
 
     .comment-box {
       background: #f9f9f9;
@@ -256,11 +256,11 @@
     }
     .fatal pre {
       white-space: pre-wrap;
-      background:#f7f7f7;
-      padding:10px;
-      border-radius:8px;
-      overflow:auto;
-      margin-top:10px;
+      background: #f7f7f7;
+      padding: 10px;
+      border-radius: 8px;
+      overflow: auto;
+      margin-top: 10px;
     }
 
     @media (max-width: 768px) {
@@ -269,7 +269,7 @@
       .container { padding: 10px; }
       .login-container { margin: 40px auto; }
       .section { padding: 15px; }
-      .tech-card { flex-direction: column; align-items:flex-start; }
+      .tech-card { flex-direction: column; align-items: flex-start; }
       .button-group { flex-direction: column; }
       .button-group .btn { min-width: auto; }
       table { font-size: 13px; }
@@ -343,7 +343,7 @@
       if (!STATE.user) return null;
       const { data, error } = await sb
         .from("profiles")
-        .select("id,email,name,role,approved,tech_role,createdat")
+        .select("id,email,name,role,approved,tech_role")
         .eq("id", STATE.user.id)
         .maybeSingle();
       if (error) throw error;
@@ -382,9 +382,9 @@
     async function fetchTechnicians() {
       const { data, error } = await sb
         .from("profiles")
-        .select("id,email,name,role,approved,tech_role,createdat")
+        .select("id,email,name,role,approved,tech_role")
         .eq("role", "tech")
-        .order("createdat", { ascending: true });
+        .order("email", { ascending: true });
       if (error) throw error;
       STATE.technicians = data || [];
       return STATE.technicians;
@@ -864,7 +864,7 @@ END:VEVENT
                 <option value="">-- Techniker wählen --</option>
                 ${STATE.technicians.map(t => `<option value="${t.id}">${t.email}</option>`).join("")}
               </select>
-              <input id="inpName" type="text" placeholder="Name setzen optional">
+              <input id="inpName" type="text" placeholder="Name setzen (optional)">
               <select id="selTechRole">
                 <option value="">-- Technik Rolle --</option>
                 <option value="ton">Ton</option>
@@ -877,10 +877,6 @@ END:VEVENT
               <button class="btn btn-primary btn-small" id="btnSaveMeta">Name/Rolle speichern</button>
               <button class="btn btn-primary btn-small" id="btnRefresh">Aktualisieren</button>
             </div>
-
-            <p style="margin-top:10px;color:var(--text-light);font-size:13px;">
-              Hinweis: Neuer Plan ist standardmäßig <strong>gesperrt</strong> (Eintragung geschlossen).
-            </p>
 
             <div style="margin-top:18px;max-height:360px;overflow:auto;">
               ${techCards || '<p style="color:var(--text-light)">Noch keine Techniker registriert.</p>'}
