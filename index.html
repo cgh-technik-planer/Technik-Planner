@@ -1,30 +1,61 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CGH Technik Planer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔧 CGH Technik Planer</title>
+
+  <!-- Supabase JS via CDN (no ESM import) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
-      --primary: #208085; --primary-dark: #1a6770; --admin: #c01530; --admin-dark: #a01229;
-      --user: #22a344; --user-dark: #1a8637; --bg: #f5f5f5; --surface: #ffffff;
-      --text: #1a1a1a; --text-light: #666; --border: #e0e0e0;
-      --success: #22a344; --warning: #f0a500; --error: #c01530;
+      --primary: #208085; --primary-dark: #1a6770;
+      --admin: #c01530; --admin-dark: #a01229;
+      --user: #22a344; --user-dark: #1a8637;
+      --bg: #f5f5f5; --surface: #ffffff;
+      --text: #1a1a1a; --text-light: #666;
+      --border: #e0e0e0; --success: #22a344;
+      --warning: #f0a500; --error: #c01530;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.6;
+    }
     .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-    .login-container { max-width: 420px; margin: 80px auto; padding: 40px; background: var(--surface); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; }
-    .login-container h1 { font-size: 32px; margin-bottom: 10px; background: linear-gradient(135deg, var(--primary), var(--admin)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .login-container {
+      max-width: 420px; margin: 80px auto; padding: 40px;
+      background: var(--surface); border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center;
+    }
+    .login-container h1 {
+      font-size: 32px; margin-bottom: 10px;
+      background: linear-gradient(135deg, var(--primary), var(--admin));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
     .login-container p { color: var(--text-light); margin-bottom: 20px; }
     .form-group { margin-bottom: 20px; text-align: left; }
-    label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-    input, select, textarea { width: 100%; padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-family: inherit; transition: all 0.3s ease; }
+    label { display:block; font-weight:600; margin-bottom:8px; font-size:14px; }
+    input, select, textarea {
+      width: 100%; padding: 12px 15px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 16px; font-family: inherit;
+      transition: all 0.3s ease;
+    }
     textarea { resize: vertical; min-height: 80px; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(32,128,133,0.1); }
-    input:disabled, textarea:disabled { background: #f0f0f0; cursor: not-allowed; opacity: 0.6; }
-    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(32,128,133,0.1);
+    }
+    input:disabled, textarea:disabled {
+      background: #f0f0f0; cursor: not-allowed; opacity: 0.6;
+    }
+    .btn {
+      width: 100%; padding: 12px; border: none; border-radius: 8px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: all 0.3s ease; display: inline-flex;
+      align-items: center; justify-content: center; gap: 8px;
+    }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(32,128,133,0.3); }
     .btn-success { background: var(--success); color: #fff; }
@@ -33,54 +64,126 @@
     .btn-danger:hover { background: var(--admin-dark); }
     .btn-small { padding: 8px 12px; font-size: 13px; width: auto; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .header { padding: 30px 20px; border-radius: 12px; color: white; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+    .header {
+      padding: 30px 20px; border-radius: 12px; color: white;
+      margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
     .header-admin { background: linear-gradient(135deg, var(--admin), var(--admin-dark)); }
-    .header-user { background: linear-gradient(135deg, var(--user), var(--user-dark)); }
+    .header-user  { background: linear-gradient(135deg, var(--user), var(--user-dark)); }
     .header h1 { margin: 0; font-size: 28px; }
     .header p { margin: 5px 0 0 0; opacity: 0.95; }
-    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-left: 10px; background: rgba(255,255,255,0.2); }
-    .section { background: var(--surface); padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+    .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; margin-left: 10px;
+      background: rgba(255,255,255,0.2);
+    }
+    .section {
+      background: var(--surface); padding: 25px; border-radius: 12px;
+      margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
     .section h2 { font-size: 20px; margin-bottom: 20px; }
     .section h3 { font-size: 16px; margin-bottom: 15px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+
+    .form-row {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 15px; margin-bottom: 20px;
+    }
     .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background: #f8f9fa; padding: 12px 15px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); font-size: 13px; text-transform: uppercase; }
+    th {
+      background: #f8f9fa; padding: 12px 15px; text-align: left;
+      font-weight: 600; border-bottom: 2px solid var(--border);
+      font-size: 13px; text-transform: uppercase;
+    }
     td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
     tr:hover { background: #fafafa; }
+
+    .plan-table { overflow-x: auto; }
+    .date-cell { font-weight: 600; background: #f8f9fa; }
     .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
-    .color-row { display: flex; gap: 10px; margin: 15px 0; justify-content: center; }
-    .color-option { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: all 0.3s ease; position: relative; user-select: none; }
+
+    /* === Verfügbarkeit: rot/gelb/grün + schwarzer Haken === */
+    .color-row { display:flex; gap:10px; margin:15px 0; }
+    .color-option {
+      width: 40px; height: 40px; border-radius: 8px; cursor: pointer;
+      border: 3px solid transparent; transition: all 0.3s ease; position: relative;
+      user-select: none;
+    }
     .color-option:hover { transform: scale(1.1); }
-    .color-option.selected::after { content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 22px; font-weight: 900; color: #000; }
+    .color-option.selected::after {
+      content: '✓';
+      position:absolute; top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      font-size: 22px; font-weight: 900;
+      color: #000; /* schwarzer Haken */
+    }
     .color-option[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
-    .color-red { background: #ffcdd2; border-color: #ef5350; }
-    .color-yellow { background: #fff9c4; border-color: #fbc02d; }
-    .color-green { background: #c8e6c9; border-color: #43a047; }
-    .tech-card { background: var(--surface); border: 2px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
+    .color-red { background:#ffcdd2; border-color:#ef5350; }
+    .color-yellow { background:#fff9c4; border-color:#fbc02d; }
+    .color-green { background:#c8e6c9; border-color:#43a047; }
+
+    .tech-card {
+      background: var(--surface); border: 2px solid var(--border);
+      padding: 15px; border-radius: 8px; margin-bottom: 12px;
+      display:flex; justify-content:space-between; align-items:center;
+      transition: all 0.3s ease;
+    }
     .tech-card:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(32,128,133,0.15); }
     .tech-info { flex: 1; }
-    .tech-info h4 { margin: 0 0 5px 0; font-size: 16px; }
-    .tech-info p { margin: 3px 0; font-size: 13px; color: var(--text-light); }
-    .role-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 5px; background: var(--primary); color: white; }
-    .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-    .button-group .btn { flex: 1; min-width: 150px; }
-    .info-box { background: #e3f2fd; border-left: 4px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .info-box p { margin: 0; color: #1565c0; font-size: 14px; }
-    .comment-box { background: #f9f9f9; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
+    .tech-info h4 { margin:0 0 5px 0; font-size:16px; }
+    .tech-info p { margin:3px 0; font-size:13px; color: var(--text-light); }
+
+    .role-badge {
+      display:inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; margin-right: 5px;
+      background: var(--primary); color: white;
+    }
+
+    .button-group { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+    .button-group .btn { flex:1; min-width: 150px; }
+
+    .tech-badge {
+      display:inline-flex; align-items:center; gap:10px;
+      background: var(--primary); color:#fff; padding: 6px 10px;
+      border-radius: 8px; font-size: 12px; margin-right: 6px; margin-bottom: 6px;
+    }
+    .tech-badge .remove {
+      cursor:pointer; font-weight:700; opacity:0.95;
+      background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px;
+      user-select: none;
+    }
+    .tech-badge .remove:hover { opacity:1; }
+
+    .info-box {
+      background: #e3f2fd; border-left: 4px solid var(--primary);
+      padding: 15px; border-radius: 8px; margin-bottom: 20px;
+    }
+    .info-box p { margin:0; color:#1565c0; font-size:14px; }
+
+    .comment-box {
+      background: #f9f9f9; border: 1px solid var(--border);
+      padding: 12px; border-radius: 8px; margin-bottom: 15px;
+      border-left: 4px solid var(--primary);
+    }
     .comment-box strong { display: block; margin-bottom: 8px; color: var(--primary); }
     .comment-box p { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-    .fatal { max-width: 1000px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 12px; border: 2px solid var(--error); }
-    .fatal pre { white-space: pre-wrap; background: #f7f7f7; padding: 10px; border-radius: 8px; overflow: auto; margin-top: 10px; }
-    .date-cell { font-weight: 600; background: #f8f9fa; }
-    .plan-table { overflow-x: auto; }
+
+    .fatal {
+      max-width: 1000px; margin: 40px auto; background: #fff;
+      padding: 20px; border-radius: 12px; border: 2px solid var(--error);
+    }
+    .fatal pre { white-space: pre-wrap; background:#f7f7f7; padding:10px; border-radius:8px; overflow:auto; margin-top:10px; }
+
     @media (max-width: 768px) {
       .form-row { grid-template-columns: 1fr; }
       .form-row.three { grid-template-columns: 1fr; }
       .container { padding: 10px; }
       .login-container { margin: 40px auto; }
       .section { padding: 15px; }
-      .tech-card { flex-direction: column; align-items: flex-start; }
+      .tech-card { flex-direction: column; align-items:flex-start; }
       .button-group { flex-direction: column; }
       .button-group .btn { min-width: auto; }
       table { font-size: 13px; }
@@ -88,24 +191,59 @@
     }
   </style>
 </head>
+
 <body>
   <div id="app"></div>
+
   <script>
-    const SUPABASEURL = "https://orcpugfqltiljnvlitsn.supabase.co";
-    const SUPABASEKEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
+    // ========= SUPABASE CONFIG =========
+    const SUPABASE_URL = "https://orcpugfqltiljnvlitsn.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Bmkzy_E73Vjn4ySDK3cl2w_d4h1VKgl";
+
     const { createClient } = supabase;
-    const sb = createClient(SUPABASEURL, SUPABASEKEY);
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const elApp = document.getElementById("app");
 
-    window.onerror = (msg, src, line, col) => {
-      if (!elApp) return;
-      elApp.innerHTML = `<div class="fatal"><h2 style="color:var(--error)">Fehler</h2><pre>${msg}\n${src}:${line}:${col}</pre></div>`;
+    window.onerror = function(message, source, lineno, colno) {
+      if (!elApp) return false;
+      elApp.innerHTML = `
+        <div class="fatal">
+          <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler in der App</h2>
+          <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+          <pre>${String(message)}\n${String(source)}:${lineno}:${colno}</pre>
+        </div>
+      `;
       return true;
     };
 
-    const STATE = { user: null, profile: null, plan: null, planSundays: [], technicians: [], responses: {}, assignments: {}, techComments: {} };
-    const fmtDateDE = (d) => new Date(d + "T12:00:00").toLocaleDateString("de-DE");
-    const toast = (m) => alert(m);
+    window.addEventListener("unhandledrejection", (event) => {
+      const msg = (event?.reason?.message) ? event.reason.message : String(event.reason || "Unbekannter Promise-Fehler");
+      if (elApp) {
+        elApp.innerHTML = `
+          <div class="fatal">
+            <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler (Promise)</h2>
+            <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+            <pre>${msg}</pre>
+          </div>
+        `;
+      }
+      event.preventDefault();
+    });
+
+    const STATE = {
+      user: null,
+      profile: null,
+      plan: null,
+      planSundays: [],
+      technicians: [],
+      responses: {},
+      assignments: {},
+      techComments: {}
+    };
+
+    const fmtDateDE = (isoDate) => new Date(isoDate + "T12:00:00").toLocaleDateString("de-DE");
+    const toast = (msg) => alert(msg);
 
     async function safeLoadSession() {
       try {
@@ -120,69 +258,168 @@
 
     async function fetchMyProfile() {
       if (!STATE.user) return null;
-      const { data, error } = await sb.from("profiles").select("id,email,name,role,approved,tech_role").eq("id", STATE.user.id).maybeSingle();
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,email,name,role,approved,tech_role,created_at")
+        .eq("id", STATE.user.id)
+        .maybeSingle();
       if (error) throw error;
-      STATE.profile = data;
+      STATE.profile = data || null;
       return STATE.profile;
     }
 
     async function fetchCurrentPlan(isAdmin) {
-      let q = sb.from("plans").select("id,status,created_by,published,admin_comment,avail_open").order("created_at", { ascending: false }).limit(1);
+      let q = sb
+        .from("plans")
+        .select("id,status,created_at,created_by,published,admin_comment,avail_open")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
       if (!isAdmin) q = q.eq("published", true);
+
       const { data, error } = await q;
       if (error) throw error;
-      STATE.plan = (data?.length) ? data[0] : null;
-      if (!STATE.plan) { STATE.planSundays = []; return null; }
-      const { data: sundays, error: e2 } = await sb.from("plansundays").select("sunday").eq("planid", STATE.plan.id).order("sunday", { ascending: true });
+
+      STATE.plan = (data && data.length) ? data[0] : null;
+      if (!STATE.plan) {
+        STATE.planSundays = [];
+        return null;
+      }
+
+      const { data: sundays, error: e2 } = await sb
+        .from("plan_sundays")
+        .select("sunday")
+        .eq("plan_id", STATE.plan.id)
+        .order("sunday", { ascending: true });
       if (e2) throw e2;
+
       STATE.planSundays = (sundays || []).map(x => x.sunday);
       return STATE.plan;
     }
 
     async function fetchTechnicians() {
-      const { data, error } = await sb.from("profiles").select("id,email,name,role,approved,tech_role").eq("role", "tech").order("email", { ascending: true });
+      const { data, error } = await sb
+        .from("profiles")
+        .select("id,email,name,role,approved,tech_role,created_at")
+        .eq("role", "tech")
+        .order("created_at", { ascending: true });
       if (error) throw error;
+
       STATE.technicians = data || [];
+      return STATE.technicians;
     }
 
     async function fetchResponsesAndAssignments() {
-      if (!STATE.plan) { STATE.responses = {}; STATE.assignments = {}; STATE.techComments = {}; return; }
-      const { data: resp, error: e1 } = await sb.from("responses").select("techid,sunday,response,techcomment").eq("planid", STATE.plan.id);
+      if (!STATE.plan) {
+        STATE.responses = {};
+        STATE.assignments = {};
+        STATE.techComments = {};
+        return;
+      }
+
+      const { data: resp, error: e1 } = await sb
+        .from("responses")
+        .select("tech_id,sunday,response,tech_comment")
+        .eq("plan_id", STATE.plan.id);
       if (e1) throw e1;
-      const respMap = {}, commMap = {};
+
+      const respMap = {};
+      const commMap = {};
       (resp || []).forEach(r => {
-        if (!respMap[r.techid]) respMap[r.techid] = {};
-        if (!commMap[r.techid]) commMap[r.techid] = {};
-        respMap[r.techid][r.sunday] = r.response;
-        commMap[r.techid][r.sunday] = r.techcomment || "";
+        if (!respMap[r.tech_id]) respMap[r.tech_id] = {};
+        if (!commMap[r.tech_id]) commMap[r.tech_id] = {};
+        respMap[r.tech_id][r.sunday] = r.response;
+        commMap[r.tech_id][r.sunday] = r.tech_comment || "";
       });
       STATE.responses = respMap;
       STATE.techComments = commMap;
-      const { data: asg, error: e2 } = await sb.from("assignments").select("sunday,techids").eq("planid", STATE.plan.id);
+
+      const { data: asg, error: e2 } = await sb
+        .from("assignments")
+        .select("sunday,tech_ids")
+        .eq("plan_id", STATE.plan.id);
       if (e2) throw e2;
+
       const asgMap = {};
-      (asg || []).forEach(a => { asgMap[a.sunday] = a.techids || []; });
+      (asg || []).forEach(a => { asgMap[a.sunday] = a.tech_ids || []; });
       STATE.assignments = asgMap;
     }
 
     function renderLogin() {
-      elApp.innerHTML = `<div class="login-container"><h1>CGH Technik</h1><p>Professionelle Planung</p><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Passwort"></div><button class="btn btn-primary" id="btnLogin">Anmelden</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Noch kein Konto? <a href="#" id="showRegister" style="color:var(--primary);cursor:pointer;">Registrieren</a></p></div>`;
+      elApp.innerHTML = `
+        <div class="login-container">
+          <h1>🔧 CGH Technik</h1>
+          <p>Professionelle Planung für dein Technik-Team</p>
+
+          <div class="form-group">
+            <label>E-Mail Adresse</label>
+            <input type="email" id="email" placeholder="deine@email.de">
+          </div>
+
+          <div class="form-group">
+            <label>Passwort</label>
+            <input type="password" id="pass" placeholder="Dein Passwort">
+          </div>
+
+          <button class="btn btn-primary" id="btnLogin">🚀 Anmelden</button>
+
+          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
+            Noch kein Konto? <a href="#" id="showRegister">Jetzt registrieren</a>
+          </p>
+        </div>
+      `;
+
       document.getElementById("btnLogin").addEventListener("click", login);
-      document.getElementById("showRegister").addEventListener("click", (e) => { e.preventDefault(); renderRegister(); });
+      document.getElementById("showRegister").addEventListener("click", (e) => {
+        e.preventDefault();
+        renderRegister();
+      });
     }
 
     function renderRegister() {
-      elApp.innerHTML = `<div class="login-container"><h1>Registrierung</h1><p>Admin muss dich freischalten</p><div class="form-group"><label>Name</label><input type="text" id="name" placeholder="Vorname Nachname"></div><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Mind. 8 Zeichen"></div><button class="btn btn-primary" id="btnRegister">Registrieren</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Schon Konto? <a href="#" id="showLogin" style="color:var(--primary);cursor:pointer;">Login</a></p></div>`;
+      elApp.innerHTML = `
+        <div class="login-container">
+          <h1>📝 Registrierung</h1>
+          <p>Nach der Registrierung muss dich der Admin freischalten.</p>
+
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="name" placeholder="Vorname Nachname">
+          </div>
+
+          <div class="form-group">
+            <label>E-Mail Adresse</label>
+            <input type="email" id="email" placeholder="deine@email.de">
+          </div>
+
+          <div class="form-group">
+            <label>Passwort</label>
+            <input type="password" id="pass" placeholder="Mind. 8 Zeichen">
+          </div>
+
+          <button class="btn btn-primary" id="btnRegister">✅ Registrieren</button>
+
+          <p style="margin-top: 16px; font-size: 13px; color: var(--text-light);">
+            Schon ein Konto? <a href="#" id="showLogin">Zum Login</a>
+          </p>
+        </div>
+      `;
+
       document.getElementById("btnRegister").addEventListener("click", register);
-      document.getElementById("showLogin").addEventListener("click", (e) => { e.preventDefault(); renderLogin(); });
+      document.getElementById("showLogin").addEventListener("click", (e) => {
+        e.preventDefault();
+        renderLogin();
+      });
     }
 
     async function login() {
       const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("pass").value;
-      if (!email || !pass) return toast("E-Mail und Passwort eingeben.");
-      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      const password = document.getElementById("pass").value;
+      if (!email || !password) return toast("Bitte E-Mail und Passwort eingeben.");
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
       if (error) return toast("Login fehlgeschlagen: " + error.message);
+
       STATE.user = data.user;
       await safeRoute();
     }
@@ -190,112 +427,180 @@
     async function register() {
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
-      const pass = document.getElementById("pass").value;
-      if (!name || !email || !pass) return toast("Alle Felder ausfüllen.");
-      const { data, error } = await sb.auth.signUp({ email, password: pass });
+      const password = document.getElementById("pass").value;
+
+      if (!name || !email || !password) return toast("Bitte Name, E-Mail und Passwort eingeben.");
+
+      const { data, error } = await sb.auth.signUp({ email, password });
       if (error) return toast("Registrierung fehlgeschlagen: " + error.message);
-      if (data.user?.id) await sb.from("profiles").update({ name }).eq("id", data.user.id).catch(() => {});
-      toast("Registriert! Warte auf Admin-Freigabe.");
-      renderLogin();
+
+      try {
+        if (data.user && data.user.id) {
+          await sb.from("profiles").update({ name }).eq("id", data.user.id);
+        }
+      } catch (_) {}
+
+      toast("✅ Registriert! Bitte warten bis der Admin dich freischaltet.");
+      await safeLoadSession();
+      await safeRoute();
     }
 
     async function logout() {
       await sb.auth.signOut();
       STATE.user = null;
+      STATE.profile = null;
       renderLogin();
     }
     window.logout = logout;
 
     function renderPending() {
-      elApp.innerHTML = `<div class="container"><div class="header header-user"><h1>Wartet auf Freischaltung</h1><p>${STATE.profile.email}</p></div><div class="section"><p style="color:var(--text-light)">Admin muss dich noch freischalten.</p><button class="btn btn-primary" id="btnLogout">Abmelden</button></div></div>`;
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-user">
+            <h1>⏳ Wartet auf Freischaltung <span class="badge">TECHNIKER</span></h1>
+            <p>${STATE.profile.email}</p>
+          </div>
+
+          <div class="section">
+            <h2>Freischaltung erforderlich</h2>
+            <p style="color: var(--text-light);">
+              Dein Konto wurde angelegt, aber muss noch vom Admin freigeschaltet werden.
+            </p>
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+          </div>
+        </div>
+      `;
       document.getElementById("btnLogout").addEventListener("click", logout);
     }
 
     function techRoleLabel(p) {
-      if (p?.tech_role === "ton") return "Ton";
-      if (p?.tech_role === "video") return "Video";
-      if (p?.tech_role === "both") return "Allrounder";
+      if (p.tech_role === "ton") return "🎤 Ton Techniker";
+      if (p.tech_role === "video") return "📹 Video Techniker";
+      if (p.tech_role === "both") return "🎤📹 Allrounder";
       return "Techniker";
     }
 
     function renderTech() {
+      const roleLabel = techRoleLabel(STATE.profile);
+
       if (!STATE.plan) {
-        elApp.innerHTML = `<div class="container"><div class="header header-user"><h1>Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]}</h1></div><div class="section"><p style="color:var(--text-light)">Es gibt noch keinen Plan.</p><button class="btn btn-primary" id="btnLogout">Abmelden</button></div></div>`;
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="header header-user">
+              <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+              <p>${roleLabel}</p>
+            </div>
+            <div class="section">
+              <p style="color:var(--text-light)">⏳ Es gibt noch keinen freigegebenen Plan.</p>
+              <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+            </div>
+          </div>
+        `;
         document.getElementById("btnLogout").addEventListener("click", logout);
         return;
       }
 
-      const myResp = STATE.responses[STATE.user.id] || {};
-      const myComm = STATE.techComments[STATE.user.id] || {};
-      const isOpen = !!STATE.plan.avail_open;
+      const myResponses = STATE.responses[STATE.user.id] || {};
+      const myComments  = STATE.techComments[STATE.user.id] || {};
+
+      const isOpen = !!STATE.plan.avail_open;    // Admin-Schalter
+      const isLocked = !isOpen;                  // wenn nicht offen => gesperrt
 
       const rows = STATE.planSundays.map(date => {
-        const my = myResp[date];
-        const comment = myComm[date] || "";
-        return `<tr>
-          <td class="date-cell"><strong>${fmtDateDE(date)}</strong></td>
-          <td><div class="color-row">
-            <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" aria-disabled="${!isOpen}"></div>
-            <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" aria-disabled="${!isOpen}"></div>
-            <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" aria-disabled="${!isOpen}"></div>
-          </div></td>
-          <td><textarea class="tech-comment" data-date="${date}" ${!isOpen ? "disabled" : ""} style="width:100%;min-height:50px;font-size:12px;">${comment}</textarea></td>
-        </tr>`;
+        const my = myResponses[date] || "";
+        const myComment = myComments[date] || "";
+
+        return `
+          <tr>
+            <td><strong>${fmtDateDE(date)}</strong></td>
+            <td>
+              <div class="color-row">
+                <div class="color-option color-red ${my === "red" ? "selected" : ""}"
+                     data-date="${date}" data-color="red" title="Nicht verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}"
+                     data-date="${date}" data-color="yellow" title="Eher nicht" aria-disabled="${isLocked ? "true" : "false"}"></div>
+                <div class="color-option color-green ${my === "green" ? "selected" : ""}"
+                     data-date="${date}" data-color="green" title="Verfügbar" aria-disabled="${isLocked ? "true" : "false"}"></div>
+              </div>
+            </td>
+            <td>
+              <textarea class="tech-comment"
+                data-date="${date}"
+                placeholder="Sonderwünsche (nur Admin sieht das)…"
+                ${isLocked ? "disabled" : ""} style="width:100%;min-height:60px;font-size:12px;">${myComment}</textarea>
+            </td>
+          </tr>
+        `;
       }).join("");
 
-      const assigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-      const approved = STATE.technicians.filter(t => t.approved);
+      const approvedTechs = STATE.technicians.filter(t => t.approved);
+      const myAssigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+      const assignedHtml = myAssigned.length
+        ? myAssigned.map(d => {
+            const teamIds = STATE.assignments[d] || [];
+            const teamNames = teamIds.map(id => {
+              if (id === STATE.user.id) return "Du";
+              const t = approvedTechs.find(x => x.id === id);
+              return t ? (t.name || t.email) : "Unbekannt";
+            });
+            return `
+              <div style="background:#e8f5e8;padding:15px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
+                <strong>📍 ${fmtDateDE(d)}</strong><br>
+                <span style="color:var(--text-light);font-size:13px;">Team: ${teamNames.join(" + ")}</span>
+              </div>
+            `;
+          }).join("")
+        : `<p style="color:var(--text-light)">Noch keine Zuweisung vorhanden</p>`;
 
-      const assignedHtml = assigned.length ? assigned.map(d => {
-        const teamIds = STATE.assignments[d] || [];
-        const names = teamIds.map(id => {
-          if (id === STATE.user.id) return "Du";
-          const t = approved.find(x => x.id === id);
-          return t ? (t.name || t.email) : "?";
-        }).join(" + ");
-        return `<div style="background:#e8f5e8;padding:12px;border-radius:8px;margin-bottom:10px;border-left:4px solid var(--success);">
-          <strong>${fmtDateDE(d)}</strong><br><span style="color:var(--text-light);font-size:13px;">Team: ${names}</span>
-        </div>`;
-      }).join("") : `<p style="color:var(--text-light)">Noch keine Zuweisung</p>`;
+      const adminCommentHtml = STATE.plan?.admin_comment
+        ? `<div class="comment-box"><strong>💬 Admin-Info:</strong><p>${STATE.plan.admin_comment}</p></div>`
+        : "";
 
-      const adminMsg = STATE.plan?.admin_comment ? `<div class="comment-box"><strong>Admin:</strong><p>${STATE.plan.admin_comment}</p></div>` : "";
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-user">
+            <h1>👤 Hallo ${STATE.profile.name || STATE.profile.email.split("@")[0]} <span class="badge">TECHNIKER</span></h1>
+            <p>${roleLabel}</p>
+          </div>
 
-      elApp.innerHTML = `<div class="container">
-        <div class="header header-user"><h1>${STATE.profile.name || "Hallo"} <span class="badge">${techRoleLabel(STATE.profile)}</span></h1></div>
-        ${adminMsg}
-        <div class="section">
-          <h2>Verfügbarkeit ${!isOpen ? '<span style="color:var(--warning)">GESPERRT</span>' : ''}</h2>
-          <div class="plan-table">
+          <div class="info-box">
+            <p>✅ Du bist angemeldet als <strong>${STATE.profile.email}</strong></p>
+          </div>
+
+          ${adminCommentHtml}
+
+          <div class="section">
+            <h2>📅 Deine Verfügbarkeit ${isLocked ? '<span style="color: var(--warning);">(Gesperrt)</span>' : ''}</h2>
             <table>
-              <tr><th>Sonntag</th><th style="text-align:center">Verfügbarkeit</th><th>Sonderwünsche</th></tr>
+              <tr>
+                <th style="width:20%">Sonntag</th>
+                <th style="width:30%;text-align:center;">Deine Verfügbarkeit</th>
+                <th>Sonderwünsche (nur Admin sieht das)</th>
+              </tr>
               ${rows}
             </table>
+
+            <button class="btn btn-success" style="margin-top:20px;" id="btnSaveAvail" ${isLocked ? "disabled" : ""}>
+              💾 Verfügbarkeit speichern
+            </button>
           </div>
-          <div class="button-group">
-            <button class="btn btn-success" id="btnSave" ${!isOpen ? "disabled" : ""}>Speichern</button>
-            <button class="btn btn-primary" id="btnExport">Kalender exportieren</button>
+
+          <div class="section">
+            <h2>✅ Deine zugewiesenen Termine</h2>
+            ${assignedHtml}
+          </div>
+
+          <div class="section">
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
           </div>
         </div>
-        <div class="section">
-          <h2>Deine Termine</h2>
-          ${assignedHtml}
-          <button class="btn btn-primary" id="btnLogout" style="margin-top:15px;">Abmelden</button>
-        </div>
-      </div>`;
+      `;
 
       document.getElementById("btnLogout").addEventListener("click", logout);
-      document.getElementById("btnExport").addEventListener("click", exportMyCalendar);
-      if (isOpen) {
-        document.getElementById("btnSave").addEventListener("click", saveTechResponses);
-        elApp.querySelectorAll(".color-option").forEach(el => {
-          el.addEventListener("click", () => {
-            const date = el.getAttribute("data-date");
-            const color = el.getAttribute("data-color");
-            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-            STATE.responses[STATE.user.id][date] = color;
-            renderTech();
-          });
-        });
+
+      if (!isLocked) {
+        document.getElementById("btnSaveAvail").addEventListener("click", saveAvailability);
+
         elApp.querySelectorAll(".tech-comment").forEach(el => {
           el.addEventListener("input", () => {
             const date = el.getAttribute("data-date");
@@ -303,44 +608,308 @@
             STATE.techComments[STATE.user.id][date] = el.value;
           });
         });
+
+        elApp.querySelectorAll(".color-option").forEach(el => {
+          el.addEventListener("click", () => {
+            if (el.getAttribute("aria-disabled") === "true") return;
+            const date = el.getAttribute("data-date");
+            const color = el.getAttribute("data-color");
+            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+            STATE.responses[STATE.user.id][date] = color;
+            renderTech();
+          });
+        });
       }
     }
 
-    async function saveTechResponses() {
-      if (!STATE.plan?.avail_open) return toast("Eintragen gesperrt.");
-      const myResp = STATE.responses[STATE.user.id] || {};
-      const myComm = STATE.techComments[STATE.user.id] || {};
-      const rows = STATE.planSundays.map(d => ({ planid: STATE.plan.id, techid: STATE.user.id, sunday: d, response: myResp[d] || null, techcomment: myComm[d] || "" }));
-      const { error } = await sb.from("responses").upsert(rows, { onConflict: "planid,techid,sunday" });
+    async function saveAvailability() {
+      if (!STATE.plan) return;
+      if (!STATE.plan.avail_open) return toast("⛔ Eintragen ist aktuell gesperrt.");
+
+      const my = STATE.responses[STATE.user.id] || {};
+      const myComments = STATE.techComments[STATE.user.id] || {};
+
+      const rows = STATE.planSundays.map((sunday) => ({
+        plan_id: STATE.plan.id,
+        tech_id: STATE.user.id,
+        sunday,
+        response: my[sunday] || "",
+        tech_comment: myComments[sunday] || ""
+      }));
+
+      const { error } = await sb
+        .from("responses")
+        .upsert(rows, { onConflict: "plan_id,tech_id,sunday" });
+
       if (error) return toast("Fehler: " + error.message);
-      toast("Gespeichert!");
+
+      toast("✅ Gespeichert!");
       await fetchResponsesAndAssignments();
       renderTech();
     }
 
-    function exportMyCalendar() {
-      if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan.");
-      const myDates = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
-      if (!myDates.length) return toast("Du hast keine zugewiesenen Termine.");
-      let ical = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CGH//EN\nCALSCALE:GREGORIAN\nX-WR-CALNAME:CGH Technik\nX-WR-TIMEZONE:Europe/Berlin\nBEGIN:VTIMEZONE\nTZID:Europe/Berlin\nBEGIN:DAYLIGHT\nDTSTART:19810329T020000\nTZOFFSETFROM:+0100\nTZOFFSETTO:+0200\nRRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\nEND:DAYLIGHT\nBEGIN:STANDARD\nDTSTART:19961027T030000\nTZOFFSETFROM:+0200\nTZOFFSETTO:+0100\nRRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\nEND:STANDARD\nEND:VTIMEZONE\n`;
-      const techs = STATE.technicians.filter(t => t.approved);
-      myDates.forEach(date => {
-        const ids = STATE.assignments[date] || [];
-        const names = ids.map(id => { const t = techs.find(x => x.id === id); return t ? (t.name || t.email) : "?"; }).join(", ");
-        const d = new Date(date + "T18:00:00Z");
-        const start = d.toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
-        const end = new Date(d.getTime() + 3 * 3600000).toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
-        ical += `BEGIN:VEVENT\nUID:${STATE.plan.id}-${date}-${STATE.user.id}@cgh\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:CGH - ${fmtDateDE(date)}\nDESCRIPTION:Team: ${names || "TBD"}\nEND:VEVENT\n`;
+    // ======== Admin ========
+    async function publishPlan() {
+      if (!STATE.plan) return;
+      const { error } = await sb
+        .from("plans")
+        .update({ published: true })
+        .eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+      toast("✅ Plan freigegeben.");
+      await refreshAdmin();
+    }
+
+    async function setAvailOpen(open) {
+      if (!STATE.plan) return;
+      const { error } = await sb
+        .from("plans")
+        .update({ avail_open: open })
+        .eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+      toast(open ? "🔓 Eintragung geöffnet." : "🔒 Eintragung gesperrt.");
+      await refreshAdmin();
+    }
+
+    function renderAdmin() {
+      const plan = STATE.plan;
+
+      const techCards = STATE.technicians.map(t => `
+        <div class="tech-card">
+          <div class="tech-info">
+            <h4>${t.name || "(kein Name)"} ${t.approved ? "✅" : "⏳"}</h4>
+            <p>
+              <span class="role-badge">${
+                t.tech_role === "ton" ? "🎤 Ton" :
+                t.tech_role === "video" ? "📹 Video" :
+                t.tech_role === "both" ? "🎤📹 Beides" : "❓ Rolle"
+              }</span>
+              ${t.email}
+            </p>
+            <p style="font-size:12px;margin-top:6px;color:var(--text-light);">
+              Status: ${t.approved ? "Freigeschaltet" : "Wartet auf Freigabe"}
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="btn btn-success btn-small btn-approve" data-id="${t.id}" data-approved="true">Freigeben</button>
+            <button class="btn btn-danger btn-small btn-approve" data-id="${t.id}" data-approved="false">Sperren</button>
+          </div>
+        </div>
+      `).join("");
+
+      elApp.innerHTML = `
+        <div class="container">
+          <div class="header header-admin">
+            <h1>⚙️ Admin Dashboard <span class="badge">ADMIN</span></h1>
+            <p>${STATE.profile.email}</p>
+          </div>
+
+          <div class="info-box">
+            <p>✅ Angemeldet als <strong>${STATE.profile.email}</strong> (Admin)</p>
+          </div>
+
+          <div class="section">
+            <h3>👥 Freischaltung & Rollen</h3>
+
+            <div class="form-row three">
+              <select id="selTech">
+                <option value="">-- Techniker wählen --</option>
+                ${STATE.technicians.map(t => `<option value="${t.id}">${t.email}</option>`).join("")}
+              </select>
+              <input id="inpName" type="text" placeholder="Name setzen (optional)">
+              <select id="selTechRole">
+                <option value="">-- Technik Rolle --</option>
+                <option value="ton">🎤 Ton</option>
+                <option value="video">📹 Video</option>
+                <option value="both">🎤📹 Beides</option>
+              </select>
+            </div>
+
+            <div class="button-group">
+              <button class="btn btn-primary btn-small" id="btnSaveMeta">💾 Name/Rolle speichern</button>
+              <button class="btn btn-primary btn-small" id="btnRefresh">🔄 Aktualisieren</button>
+            </div>
+
+            <div style="margin-top:18px;max-height:360px;overflow:auto;">
+              ${techCards || '<p style="color:var(--text-light)">Noch keine Techniker registriert.</p>'}
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>🆕 Neuen Plan erstellen</h3>
+            <div class="form-row">
+              <input id="planStart" type="date">
+              <input id="planWeeks" type="number" value="4" min="1" max="12">
+            </div>
+            <div class="form-group">
+              <label>Admin-Kommentar (z.B. Singteam, Abendmahl, etc.)</label>
+              <textarea id="adminComment" placeholder="z.B. Singteam mit Kaffee & Kuchen" style="min-height: 80px;"></textarea>
+            </div>
+            <button class="btn btn-primary" id="btnCreatePlan">📅 Plan erstellen</button>
+            <p style="margin-top:10px;color:var(--text-light);font-size:13px;">
+              Hinweis: Neuer Plan ist standardmäßig <strong>gesperrt</strong> (Eintragung geschlossen).
+            </p>
+          </div>
+
+          ${plan ? renderAdminPlan() : `
+            <div class="section">
+              <h3>📅 Kein Plan vorhanden</h3>
+              <p style="color:var(--text-light)">Erstelle unten einen neuen Plan.</p>
+            </div>
+          `}
+
+          <div class="section">
+            <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("btnLogout").addEventListener("click", logout);
+      document.getElementById("btnRefresh").addEventListener("click", refreshAdmin);
+      document.getElementById("btnSaveMeta").addEventListener("click", saveTechMeta);
+      document.getElementById("btnCreatePlan").addEventListener("click", createPlan);
+
+      elApp.querySelectorAll(".btn-approve").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          const approved = btn.getAttribute("data-approved") === "true";
+          await approveUser(id, approved);
+        });
       });
-      ical += `END:VCALENDAR`;
-      const blob = new Blob([ical], { type: "text/calendar" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CGH-${STATE.plan.id}.ics`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast("Exportiert!");
+
+      if (STATE.plan) wireAdminPlanHandlers();
+    }
+
+    function renderAdminPlan() {
+      const plan = STATE.plan;
+      const techs = STATE.technicians.filter(t => t.approved);
+
+      const tableHeader = techs.map(t =>
+        `<th>${(t.name || t.email)} (${t.tech_role === "ton" ? "🎤" : t.tech_role === "video" ? "📹" : "🎤📹"})</th>`
+      ).join("");
+
+      const rows = STATE.planSundays.map(date => {
+        const tds = techs.map(t => {
+          const resp = (STATE.responses[t.id] || {})[date];
+          const emoji = resp === "green" ? "🟢" : resp === "yellow" ? "🟡" : resp === "red" ? "🔴" : "❓";
+          return `<td class="response-cell">${emoji}</td>`;
+        }).join("");
+        return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`;
+      }).join("");
+
+      const techCommentsHtml = STATE.planSundays.map(date => {
+        const comments = [];
+        techs.forEach(t => {
+          const comment = (STATE.techComments[t.id] || {})[date];
+          if (comment) comments.push(`<strong>${t.name || t.email}:</strong> ${comment}`);
+        });
+        return `
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid var(--primary);">
+            <strong>${fmtDateDE(date)}</strong><br>
+            ${comments.length ? comments.map(c => `<div style="font-size: 13px; margin-top: 5px;">${c}</div>`).join("") : '<em style="color: var(--text-light); font-size: 13px;">Keine Sonderwünsche</em>'}
+          </div>
+        `;
+      }).join("");
+
+      const manualSundayOptions = STATE.planSundays.map(d => `<option value="${d}">${fmtDateDE(d)}</option>`).join("");
+      const manualTechOptions = techs.map(t => `<option value="${t.id}">${t.name || t.email} (${t.tech_role || "?"})</option>`).join("");
+
+      const assignmentsOverview = STATE.planSundays.map(date => {
+        const ids = STATE.assignments[date] || [];
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return (t ? (t.name || t.email) : "?");
+        }).join(" + ");
+        return `
+          <div style="background:#f8f9fa;padding:10px;border-radius:8px;margin-bottom:10px;">
+            <strong>${fmtDateDE(date)}</strong> → ${names || "❌ Noch nicht zugewiesen"}
+          </div>
+        `;
+      }).join("");
+
+      const pubBadge = plan.published
+        ? `<span class="badge">VERÖFFENTLICHT</span>`
+        : `<span class="badge">DRAFT</span>`;
+
+      const pubButton = plan.published
+        ? ``
+        : `<button class="btn btn-success btn-small" id="btnPublishPlan">✅ Plan freigeben</button>`;
+
+      const lockButton = plan.avail_open
+        ? `<button class="btn btn-danger btn-small" id="btnAvailClose">🔒 Eintragung sperren</button>`
+        : `<button class="btn btn-success btn-small" id="btnAvailOpen">🔓 Eintragung öffnen</button>`;
+
+      return `
+        <div class="section" id="adminPlanSection">
+          <h3>📊 Aktueller Plan ${pubBadge} - Status: <strong>${plan.status}</strong></h3>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">
+            Erstellt: ${new Date(plan.created_at).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+          </p>
+          <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
+            Eintragung: <strong>${plan.avail_open ? "OFFEN" : "GESPERRT"}</strong>
+          </p>
+
+          ${plan.admin_comment ? `<div class="comment-box"><strong>💬 Admin-Kommentar:</strong><p>${plan.admin_comment}</p></div>` : ""}
+
+          <div class="plan-table">
+            <table>
+              <tr>
+                <th>Sonntag</th>
+                ${tableHeader}
+              </tr>
+              ${rows}
+            </table>
+          </div>
+
+          <div class="button-group">
+            ${pubButton}
+            ${lockButton}
+            <button class="btn btn-success btn-small" id="btnAutoAssign">🤖 Auto-Zuweisung</button>
+            <button class="btn btn-primary btn-small" id="btnCalendarExport">📅 Kalender Export (.ics)</button>
+            <button class="btn btn-danger btn-small" id="btnDeletePlan">🗑️ Plan löschen</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>💬 Sonderwünsche der Techniker</h3>
+          ${techCommentsHtml || '<p style="color: var(--text-light);">Noch keine Sonderwünsche eingetragen</p>'}
+        </div>
+
+        <div class="section">
+          <h3>🔧 Manuelle Anpassung</h3>
+          <div class="form-row three">
+            <select id="manualDate">
+              <option value="">-- Sonntag wählen --</option>
+              ${manualSundayOptions}
+            </select>
+            <select id="manualTech">
+              <option value="">-- Techniker wählen --</option>
+              ${manualTechOptions}
+            </select>
+            <button class="btn btn-success btn-small" style="width:100%" id="btnManualAdd">➕ Hinzufügen</button>
+          </div>
+          <div id="manualList"></div>
+        </div>
+
+        <div class="section">
+          <h3>✅ Zuweisungen Übersicht</h3>
+          ${assignmentsOverview}
+        </div>
+      `;
+    }
+
+    function wireAdminPlanHandlers() {
+      document.getElementById("btnAutoAssign")?.addEventListener("click", autoAssign);
+      document.getElementById("btnDeletePlan")?.addEventListener("click", deletePlan);
+      document.getElementById("btnManualAdd")?.addEventListener("click", manualAdd);
+      document.getElementById("manualDate")?.addEventListener("change", updateManualList);
+      document.getElementById("btnPublishPlan")?.addEventListener("click", publishPlan);
+      document.getElementById("btnCalendarExport")?.addEventListener("click", exportCalendar);
+
+      document.getElementById("btnAvailOpen")?.addEventListener("click", () => setAvailOpen(true));
+      document.getElementById("btnAvailClose")?.addEventListener("click", () => setAvailOpen(false));
+
+      updateManualList();
     }
 
     async function refreshAdmin() {
@@ -350,238 +919,294 @@
       renderAdmin();
     }
 
-    function renderAdmin() {
-      const plan = STATE.plan;
-      const techs = STATE.technicians.map(t => `<div class="tech-card"><div class="tech-info"><h4>${t.name || "Kein Name"} ${t.approved ? "✅" : "⏳"}</h4><p><span class="role-badge">${techRoleLabel(t)}</span> ${t.email}</p></div><div style="display:flex;gap:8px;"><button class="btn btn-success btn-small" data-id="${t.id}" data-app="true">✓</button><button class="btn btn-danger btn-small" data-id="${t.id}" data-app="false">✕</button></div></div>`).join("");
-
-      let planHtml = '';
-      if (plan) {
-        const myResp = STATE.responses[STATE.user.id] || {};
-        const myComm = STATE.techComments[STATE.user.id] || {};
-        const adminRows = STATE.planSundays.map(date => {
-          const my = myResp[date];
-          const comment = myComm[date] || "";
-          return `<tr>
-            <td class="date-cell"><strong>${fmtDateDE(date)}</strong></td>
-            <td><div class="color-row">
-              <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" data-admin="true"></div>
-              <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" data-admin="true"></div>
-              <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" data-admin="true"></div>
-            </div></td>
-            <td><textarea class="admin-comment" data-date="${date}" style="width:100%;min-height:50px;font-size:12px;">${comment}</textarea></td>
-          </tr>`;
-        }).join("");
-
-        const allTechs = [STATE.profile, ...STATE.technicians.filter(t => t.approved && t.id !== STATE.profile.id)];
-        const tableHeader = allTechs.map(t => `<th>${t.name || t.email}</th>`).join("");
-        const respRows = STATE.planSundays.map(date => { 
-          const tds = allTechs.map(t => { 
-            const resp = (STATE.responses[t.id] || {})[date]; 
-            const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : ""; 
-            return `<td class="response-cell">${emoji}</td>`; 
-          }).join(""); 
-          return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`; 
-        }).join("");
-
-        planHtml = `
-        <div class="section">
-          <h3>Technik-Übersicht (alle Verfügbarkeiten)</h3>
-          <div class="plan-table">
-            <table>
-              <tr><th>Sonntag</th>${tableHeader}</tr>
-              ${respRows}
-            </table>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>Admin-Eintragung (deine Verfügbarkeit)</h3>
-          <div class="plan-table">
-            <table>
-              <tr><th>Sonntag</th><th style="text-align:center">Verfügbarkeit</th><th>Sonderwünsche</th></tr>
-              ${adminRows}
-            </table>
-          </div>
-          <div class="button-group">
-            <button class="btn btn-success" id="btnSaveAdminAvail">Admin-Eintragung speichern</button>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>Plan Status</h3>
-          <p style="margin-bottom:10px;color:var(--text-light)">Status: <strong>${plan.status}</strong> ${plan.published ? '| LIVE' : '| DRAFT'}</p>
-          <p style="margin-bottom:15px;color:var(--text-light)">Eintragung: <strong>${plan.avail_open ? 'OFFEN' : 'GESPERRT'}</strong></p>
-          <div class="button-group">
-            ${!plan.published ? '<button class="btn btn-success btn-small" id="btnPublish">Freigeben</button>' : ''}
-            ${plan.avail_open ? '<button class="btn btn-danger btn-small" id="btnLock">Sperren</button>' : '<button class="btn btn-success btn-small" id="btnOpen">Öffnen</button>'}
-            <button class="btn btn-primary btn-small" id="btnAutoAssign">Auto-Zuweisung</button>
-            <button class="btn btn-primary btn-small" id="btnExportAll">Kalender Export</button>
-            <button class="btn btn-danger btn-small" id="btnDeletePlan">Löschen</button>
-          </div>
-        </div>
-        `;
-      }
-
-      elApp.innerHTML = `<div class="container">
-        <div class="header header-admin"><h1>Admin Dashboard <span class="badge">ADMIN</span></h1><p>${STATE.profile.email}</p></div>
-        <div class="section">
-          <h3>Techniker freischalten</h3>
-          <div style="max-height:300px;overflow:auto;">${techs || '<p style="color:var(--text-light)">Keine Techniker</p>'}</div>
-        </div>
-        <div class="section">
-          <h3>Neuer Plan</h3>
-          <div class="form-row"><input id="planStart" type="date"><input id="planWeeks" type="number" value="4" min="1"></div>
-          <div class="form-group"><label>Admin-Kommentar</label><textarea id="adminComment" placeholder="z.B. Kaffee und Kuchen" style="min-height:80px;"></textarea></div>
-          <button class="btn btn-primary" id="btnCreatePlan">Plan erstellen</button>
-        </div>
-        ${planHtml}
-        <div class="section"><button class="btn btn-primary" id="btnLogout">Abmelden</button></div>
-      </div>`;
-
-      document.getElementById("btnLogout").addEventListener("click", logout);
-      document.getElementById("btnCreatePlan").addEventListener("click", createPlan);
-      elApp.querySelectorAll("[data-app]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = btn.getAttribute("data-id");
-          const app = btn.getAttribute("data-app") === "true";
-          const { error } = await sb.from("profiles").update({ approved: app }).eq("id", id);
-          if (error) return toast("Fehler: " + error.message);
-          await refreshAdmin();
-        });
-      });
-      if (plan) {
-        document.getElementById("btnPublish")?.addEventListener("click", async () => {
-          const { error } = await sb.from("plans").update({ published: true }).eq("id", plan.id);
-          if (error) return toast("Fehler: " + error.message);
-          await refreshAdmin();
-        });
-        document.getElementById("btnOpen")?.addEventListener("click", async () => {
-          const { error } = await sb.from("plans").update({ avail_open: true }).eq("id", plan.id);
-          if (error) return toast("Fehler: " + error.message);
-          await refreshAdmin();
-        });
-        document.getElementById("btnLock")?.addEventListener("click", async () => {
-          const { error } = await sb.from("plans").update({ avail_open: false }).eq("id", plan.id);
-          if (error) return toast("Fehler: " + error.message);
-          await refreshAdmin();
-        });
-        document.getElementById("btnSaveAdminAvail")?.addEventListener("click", saveAdminAvailability);
-        document.getElementById("btnDeletePlan")?.addEventListener("click", async () => {
-          if (!confirm("Wirklich löschen?")) return;
-          const { error } = await sb.from("plans").delete().eq("id", plan.id);
-          if (error) return toast("Fehler: " + error.message);
-          await refreshAdmin();
-        });
-        document.getElementById("btnAutoAssign")?.addEventListener("click", autoAssign);
-        document.getElementById("btnExportAll")?.addEventListener("click", exportAllCalendar);
-        elApp.querySelectorAll(".color-option[data-admin='true']").forEach(el => {
-          el.addEventListener("click", () => {
-            const date = el.getAttribute("data-date");
-            const color = el.getAttribute("data-color");
-            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
-            STATE.responses[STATE.user.id][date] = color;
-            renderAdmin();
-          });
-        });
-        elApp.querySelectorAll(".admin-comment").forEach(el => {
-          el.addEventListener("input", () => {
-            const date = el.getAttribute("data-date");
-            if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
-            STATE.techComments[STATE.user.id][date] = el.value;
-          });
-        });
-      }
+    async function approveUser(id, approved) {
+      const { error } = await sb.from("profiles").update({ approved }).eq("id", id);
+      if (error) return toast("Fehler: " + error.message);
+      await refreshAdmin();
     }
 
-    async function saveAdminAvailability() {
-      if (!STATE.plan) return;
-      const myResp = STATE.responses[STATE.user.id] || {};
-      const myComm = STATE.techComments[STATE.user.id] || {};
-      const rows = STATE.planSundays.map(d => ({ planid: STATE.plan.id, techid: STATE.user.id, sunday: d, response: myResp[d] || null, techcomment: myComm[d] || "" }));
-      const { error } = await sb.from("responses").upsert(rows, { onConflict: "planid,techid,sunday" });
+    async function saveTechMeta() {
+      const id = document.getElementById("selTech").value;
+      const name = document.getElementById("inpName").value.trim();
+      const tech_role = document.getElementById("selTechRole").value;
+
+      if (!id) return toast("Bitte Techniker wählen.");
+
+      const payload = {};
+      if (name) payload.name = name;
+      if (tech_role) payload.tech_role = tech_role;
+
+      if (Object.keys(payload).length === 0) return toast("Nichts zu speichern.");
+
+      const { error } = await sb.from("profiles").update(payload).eq("id", id);
       if (error) return toast("Fehler: " + error.message);
-      toast("Admin-Eintragung gespeichert!");
+
+      await refreshAdmin();
+      toast("✅ Gespeichert.");
+    }
+
+    async function createPlan() {
+      const startStr = document.getElementById("planStart").value;
+      const weeks = parseInt(document.getElementById("planWeeks").value, 10);
+      const adminComment = document.getElementById("adminComment").value.trim();
+      if (!startStr || isNaN(weeks) || weeks < 1) return toast("Startdatum + Wochen eingeben.");
+
+      let current = new Date(startStr + "T12:00:00");
+      const day = current.getDay();
+      if (day !== 0) current.setDate(current.getDate() + (7 - day));
+
+      const sundays = [];
+      for (let i = 0; i < weeks; i++) {
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, "0");
+        const d = String(current.getDate()).padStart(2, "0");
+        sundays.push(`${y}-${m}-${d}`);
+        current.setDate(current.getDate() + 7);
+      }
+
+      const { data: plan, error: e1 } = await sb
+        .from("plans")
+        .insert([{ status: "responses_pending", created_by: STATE.user.id, admin_comment: adminComment, avail_open: false }])
+        .select("id,status,created_at,created_by,published,admin_comment,avail_open")
+        .single();
+      if (e1) return toast("Plan Fehler: " + e1.message);
+
+      const rows = sundays.map(s => ({ plan_id: plan.id, sunday: s }));
+      const { error: e2 } = await sb.from("plan_sundays").insert(rows);
+      if (e2) return toast("Sonntage Fehler: " + e2.message);
+
+      toast("✅ Plan erstellt (Draft). Eintragung ist erstmal gesperrt – bitte im Admin öffnen.");
+      await refreshAdmin();
+    }
+
+    async function deletePlan() {
+      if (!STATE.plan) return;
+      if (!confirm("Plan wirklich löschen?")) return;
+
+      const { error } = await sb.from("plans").delete().eq("id", STATE.plan.id);
+      if (error) return toast("Fehler: " + error.message);
+
+      toast("✅ Plan gelöscht.");
+      await refreshAdmin();
+    }
+
+    function updateManualList() {
+      const date = document.getElementById("manualDate")?.value;
+      const box = document.getElementById("manualList");
+      if (!box) return;
+
+      if (!date) {
+        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Bitte zuerst einen Sonntag auswählen.</p>';
+        return;
+      }
+
+      const techs = STATE.technicians.filter(t => t.approved);
+      const ids = STATE.assignments[date] || [];
+
+      if (ids.length === 0) {
+        box.innerHTML = '<p style="color: var(--text-light); margin-top: 10px;">Noch niemand zugewiesen.</p>';
+        return;
+      }
+
+      box.innerHTML = `
+        <div style="margin-top:10px;">
+          ${ids.map(id => {
+            const t = techs.find(x => x.id === id);
+            if (!t) return "";
+            return `<span class="tech-badge">${t.name || t.email}<span class="remove" data-date="${date}" data-id="${id}">✕</span></span>`;
+          }).join("")}
+        </div>
+      `;
+
+      box.querySelectorAll(".remove").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const d = btn.getAttribute("data-date");
+          const id = btn.getAttribute("data-id");
+          await manualRemove(d, id);
+        });
+      });
+    }
+
+    async function manualAdd() {
+      const date = document.getElementById("manualDate")?.value;
+      const techId = document.getElementById("manualTech")?.value;
+      if (!STATE.plan) return;
+      if (!date || !techId) return toast("Sonntag und Techniker wählen.");
+
+      const existing = STATE.assignments[date] || [];
+      if (existing.includes(techId)) return toast("Techniker ist schon zugewiesen.");
+
+      const newIds = [...existing, techId];
+
+      const { error } = await sb
+        .from("assignments")
+        .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
+
+      if (error) return toast("Fehler: " + error.message);
+
       await fetchResponsesAndAssignments();
       renderAdmin();
     }
 
-    async function createPlan() {
-      const start = document.getElementById("planStart").value;
-      const weeks = parseInt(document.getElementById("planWeeks").value, 10);
-      const comment = document.getElementById("adminComment").value.trim();
-      if (!start || !weeks) return toast("Startdatum und Wochen eingeben.");
-      let d = new Date(start + "T12:00:00");
-      if (d.getDay() !== 0) d.setDate(d.getDate() + (7 - d.getDay()));
-      const sundays = [];
-      for (let i = 0; i < weeks; i++) {
-        sundays.push(d.toISOString().split("T")[0]);
-        d.setDate(d.getDate() + 7);
-      }
-      const { data: plan, error: e1 } = await sb.from("plans").insert([{ status: "pending", created_by: STATE.user.id, admin_comment: comment, avail_open: false }]).select().single();
-      if (e1) return toast("Fehler: " + e1.message);
-      const rows = sundays.map(s => ({ planid: plan.id, sunday: s }));
-      const { error: e2 } = await sb.from("plansundays").insert(rows);
-      if (e2) return toast("Fehler: " + e2.message);
-      toast("Plan erstellt!");
-      await refreshAdmin();
+    async function manualRemove(date, techId) {
+      if (!STATE.plan) return;
+
+      const existing = STATE.assignments[date] || [];
+      const newIds = existing.filter(id => id !== techId);
+
+      const { error } = await sb
+        .from("assignments")
+        .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: newIds }], { onConflict: "plan_id,sunday" });
+
+      if (error) return toast("Fehler: " + error.message);
+
+      await fetchResponsesAndAssignments();
+      renderAdmin();
     }
 
     async function autoAssign() {
       if (!STATE.plan) return;
+
       const techs = STATE.technicians.filter(t => t.approved);
+      const respByTech = STATE.responses;
+
+      function score(tid, date) {
+        const r = (respByTech[tid] || {})[date];
+        if (r === "green") return 2;
+        if (r === "yellow") return 1;
+        if (r === "red") return -5;
+        return 0;
+      }
+
       for (const date of STATE.planSundays) {
-        const scores = {};
-        techs.forEach(t => {
-          const r = (STATE.responses[t.id] || {})[date];
-          scores[t.id] = r === "green" ? 2 : r === "yellow" ? 1 : r === "red" ? -5 : 0;
-        });
-        const ton = techs.filter(t => t.tech_role === "ton" || t.tech_role === "both").sort((a, b) => scores[b.id] - scores[a.id])[0];
-        const video = techs.filter(t => (t.tech_role === "video" || t.tech_role === "both") && t.id !== ton?.id).sort((a, b) => scores[b.id] - scores[a.id])[0];
+        const ton = techs
+          .filter(t => t.tech_role === "ton" || t.tech_role === "both")
+          .map(t => ({ t, s: score(t.id, date) }))
+          .sort((a,b) => b.s - a.s)[0]?.t;
+
+        const video = techs
+          .filter(t => (t.tech_role === "video" || t.tech_role === "both") && t.id !== ton?.id)
+          .map(t => ({ t, s: score(t.id, date) }))
+          .sort((a,b) => b.s - a.s)[0]?.t;
+
         const ids = [];
         if (ton) ids.push(ton.id);
         if (video) ids.push(video.id);
-        const { error } = await sb.from("assignments").upsert([{ planid: STATE.plan.id, sunday: date, techids: ids }], { onConflict: "planid,sunday" });
+
+        const { error } = await sb
+          .from("assignments")
+          .upsert([{ plan_id: STATE.plan.id, sunday: date, tech_ids: ids }], { onConflict: "plan_id,sunday" });
+
         if (error) return toast("Fehler: " + error.message);
       }
-      toast("Zugewiesen!");
-      await refreshAdmin();
+
+      toast("✅ Auto-Zuweisung fertig.");
+      await fetchResponsesAndAssignments();
+      renderAdmin();
     }
 
-    function exportAllCalendar() {
-      if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan.");
-      let ical = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CGH//EN\nX-WR-CALNAME:CGH Plan\nX-WR-TIMEZONE:Europe/Berlin\nEND:VTIMEZONE\n`;
-      const allTechs = [STATE.profile, ...STATE.technicians.filter(t => t.approved && t.id !== STATE.profile.id)];
+    function exportCalendar() {
+      if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan vorhanden.");
+
+      let ical = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//CGH Technik Planer//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:CGH Technik Plan
+X-WR-TIMEZONE:Europe/Berlin
+BEGIN:VTIMEZONE
+TZID:Europe/Berlin
+BEGIN:STANDARD
+DTSTART:19961027T030000
+TZOFFSETFROM:+0200
+TZOFFSETTO:+0100
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
+END:STANDARD
+BEGIN:DAYLIGHT
+DTSTART:19810329T020000
+TZOFFSETFROM:+0100
+TZOFFSETTO:+0200
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
+END:DAYLIGHT
+END:VTIMEZONE
+`;
+
       STATE.planSundays.forEach(date => {
         const ids = STATE.assignments[date] || [];
-        const names = ids.map(id => { const t = allTechs.find(x => x.id === id); return t ? (t.name || t.email) : "?"; }).join(", ");
-        const d = new Date(date + "T18:00:00Z");
-        const start = d.toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
-        const end = new Date(d.getTime() + 3 * 3600000).toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
-        ical += `BEGIN:VEVENT\nUID:${STATE.plan.id}-${date}@cgh\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:CGH - ${fmtDateDE(date)}\nDESCRIPTION:${names || "TBD"}\nEND:VEVENT\n`;
+        const techs = STATE.technicians.filter(t => t.approved);
+        const names = ids.map(id => {
+          const t = techs.find(x => x.id === id);
+          return (t ? (t.name || t.email) : "?");
+        }).join(", ");
+
+        const d = new Date(date + "T18:00:00");
+        const dtstart = d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+        const dtend = new Date(d.getTime() + 3 * 60 * 60000).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+        ical += `BEGIN:VEVENT
+UID:${STATE.plan.id}-${date}@cgh-technik
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
+DTSTART:${dtstart}
+DTEND:${dtend}
+SUMMARY:🎤 CGH Technik - ${fmtDateDE(date)}
+DESCRIPTION:Team: ${names || "noch nicht zugewiesen"}
+LOCATION:CGH Stuttgart
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+`;
       });
+
       ical += `END:VCALENDAR`;
-      const blob = new Blob([ical], { type: "text/calendar" });
+
+      const blob = new Blob([ical], { type: "text/calendar;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `CGH-Plan-${STATE.plan.id}.ics`;
-      a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `CGH-Technik-Plan-${STATE.plan.id}.ics`;
+      link.click();
       URL.revokeObjectURL(url);
-      toast("Exportiert!");
+
+      toast("✅ Kalender exportiert!");
     }
 
     async function route() {
       await safeLoadSession();
       if (!STATE.user) return renderLogin();
+
       await fetchMyProfile();
-      if (!STATE.profile) return renderLogin();
-      if (STATE.profile.role === "admin") {
+
+      if (!STATE.profile) {
+        elApp.innerHTML = `
+          <div class="container">
+            <div class="fatal">
+              <h2 style="margin:0 0 8px 0;color:var(--error)">Profil fehlt</h2>
+              <p style="margin:0;color:var(--text-light)">
+                Dein User existiert, aber es gibt keinen Eintrag in <code>profiles</code>.
+                Prüfe Trigger <code>handle_new_user()</code>.
+              </p>
+              <div style="margin-top: 12px;">
+                <button class="btn btn-primary" id="btnLogout">🚪 Abmelden</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById("btnLogout").addEventListener("click", logout);
+        return;
+      }
+
+      const isAdmin = STATE.profile.role === "admin";
+
+      if (isAdmin) {
         await fetchTechnicians();
         await fetchCurrentPlan(true);
         await fetchResponsesAndAssignments();
         return renderAdmin();
       }
+
       if (!STATE.profile.approved) return renderPending();
+
       await fetchTechnicians();
       await fetchCurrentPlan(false);
       await fetchResponsesAndAssignments();
@@ -589,13 +1214,22 @@
     }
 
     async function safeRoute() {
-      try { await route(); } catch (e) {
-        elApp.innerHTML = `<div class="fatal"><h2 style="color:var(--error)">Fehler</h2><pre>${e?.message || e}</pre></div>`;
+      try {
+        await route();
+      } catch (e) {
+        const msg = e?.message ? e.message : String(e);
+        elApp.innerHTML = `
+          <div class="fatal">
+            <h2 style="margin:0 0 8px 0;color:var(--error)">Fehler beim Laden</h2>
+            <p style="margin:0;color:var(--text-light)">Bitte Screenshot an Jan schicken:</p>
+            <pre>${msg}</pre>
+          </div>
+        `;
       }
     }
 
-    sb.auth.onAuthStateChange(() => safeRoute());
     safeRoute();
+    sb.auth.onAuthStateChange(() => { safeRoute(); });
   </script>
 </body>
 </html>
