@@ -351,7 +351,7 @@
       return STATE.profile;
     }
 
-       async function fetchCurrentPlan(isAdmin) {
+         async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
         .select("id,status,createdby,published,admincomment,availopen")
@@ -378,6 +378,7 @@
       STATE.planSundays = (sundays || []).map(x => x.sunday);
       return STATE.plan;
     }
+
 
 
       const { data: sundays, error: e2 } = await sb
