@@ -48,6 +48,7 @@
     th { background: #f8f9fa; padding: 12px 15px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); font-size: 13px; text-transform: uppercase; }
     td { padding: 12px 15px; border-bottom: 1px solid var(--border); }
     tr:hover { background: #fafafa; }
+    .response-cell { text-align: center; font-weight: 600; font-size: 18px; }
     .color-row { display: flex; gap: 10px; margin: 15px 0; justify-content: center; }
     .color-option { width: 40px; height: 40px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: all 0.3s ease; position: relative; user-select: none; }
     .color-option:hover { transform: scale(1.1); }
@@ -64,9 +65,6 @@
     .role-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-right: 5px; background: var(--primary); color: white; }
     .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
     .button-group .btn { flex: 1; min-width: 150px; }
-    .tech-badge { display: inline-flex; align-items: center; gap: 10px; background: var(--primary); color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; margin-right: 6px; margin-bottom: 6px; }
-    .tech-badge .remove { cursor: pointer; font-weight: 700; opacity: 0.95; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 6px; user-select: none; }
-    .tech-badge .remove:hover { opacity: 1; }
     .info-box { background: #e3f2fd; border-left: 4px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px; }
     .info-box p { margin: 0; color: #1565c0; font-size: 14px; }
     .comment-box { background: #f9f9f9; border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
@@ -74,6 +72,8 @@
     .comment-box p { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
     .fatal { max-width: 1000px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 12px; border: 2px solid var(--error); }
     .fatal pre { white-space: pre-wrap; background: #f7f7f7; padding: 10px; border-radius: 8px; overflow: auto; margin-top: 10px; }
+    .date-cell { font-weight: 600; background: #f8f9fa; }
+    .plan-table { overflow-x: auto; }
     @media (max-width: 768px) {
       .form-row { grid-template-columns: 1fr; }
       .form-row.three { grid-template-columns: 1fr; }
@@ -166,13 +166,13 @@
     }
 
     function renderLogin() {
-      elApp.innerHTML = `<div class="login-container"><h1>CGH Technik</h1><p>Professionelle Planung für dein Technik-Team</p><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Dein Passwort"></div><button class="btn btn-primary" id="btnLogin">Anmelden</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Noch kein Konto? <a href="#" id="showRegister">Registrieren</a></p></div>`;
+      elApp.innerHTML = `<div class="login-container"><h1>CGH Technik</h1><p>Professionelle Planung</p><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Passwort"></div><button class="btn btn-primary" id="btnLogin">Anmelden</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Noch kein Konto? <a href="#" id="showRegister" style="color:var(--primary);cursor:pointer;">Registrieren</a></p></div>`;
       document.getElementById("btnLogin").addEventListener("click", login);
       document.getElementById("showRegister").addEventListener("click", (e) => { e.preventDefault(); renderRegister(); });
     }
 
     function renderRegister() {
-      elApp.innerHTML = `<div class="login-container"><h1>Registrierung</h1><p>Nach Registrierung muss der Admin freischalten.</p><div class="form-group"><label>Name</label><input type="text" id="name" placeholder="Vorname Nachname"></div><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Mind. 8 Zeichen"></div><button class="btn btn-primary" id="btnRegister">Registrieren</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Schon ein Konto? <a href="#" id="showLogin">Login</a></p></div>`;
+      elApp.innerHTML = `<div class="login-container"><h1>Registrierung</h1><p>Admin muss dich freischalten</p><div class="form-group"><label>Name</label><input type="text" id="name" placeholder="Vorname Nachname"></div><div class="form-group"><label>E-Mail</label><input type="email" id="email" placeholder="deine@email.de"></div><div class="form-group"><label>Passwort</label><input type="password" id="pass" placeholder="Mind. 8 Zeichen"></div><button class="btn btn-primary" id="btnRegister">Registrieren</button><p style="margin-top:16px;font-size:13px;color:var(--text-light);">Schon Konto? <a href="#" id="showLogin" style="color:var(--primary);cursor:pointer;">Login</a></p></div>`;
       document.getElementById("btnRegister").addEventListener("click", register);
       document.getElementById("showLogin").addEventListener("click", (e) => { e.preventDefault(); renderLogin(); });
     }
@@ -233,7 +233,7 @@
         const my = myResp[date];
         const comment = myComm[date] || "";
         return `<tr>
-          <td><strong>${fmtDateDE(date)}</strong></td>
+          <td class="date-cell"><strong>${fmtDateDE(date)}</strong></td>
           <td><div class="color-row">
             <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" aria-disabled="${!isOpen}"></div>
             <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" aria-disabled="${!isOpen}"></div>
@@ -243,10 +243,10 @@
         </tr>`;
       }).join("");
 
-      const assignedDates = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
+      const assigned = STATE.planSundays.filter(d => (STATE.assignments[d] || []).includes(STATE.user.id));
       const approved = STATE.technicians.filter(t => t.approved);
 
-      const assignedHtml = assignedDates.length ? assignedDates.map(d => {
+      const assignedHtml = assigned.length ? assigned.map(d => {
         const teamIds = STATE.assignments[d] || [];
         const names = teamIds.map(id => {
           if (id === STATE.user.id) return "Du";
@@ -265,7 +265,12 @@
         ${adminMsg}
         <div class="section">
           <h2>Verfügbarkeit ${!isOpen ? '<span style="color:var(--warning)">GESPERRT</span>' : ''}</h2>
-          <table><tr><th>Sonntag</th><th style="text-align:center">Verfügbarkeit</th><th>Sonderwünsche</th></tr>${rows}</table>
+          <div class="plan-table">
+            <table>
+              <tr><th>Sonntag</th><th style="text-align:center">Verfügbarkeit</th><th>Sonderwünsche</th></tr>
+              ${rows}
+            </table>
+          </div>
           <div class="button-group">
             <button class="btn btn-success" id="btnSave" ${!isOpen ? "disabled" : ""}>Speichern</button>
             <button class="btn btn-primary" id="btnExport">Kalender exportieren</button>
@@ -274,7 +279,7 @@
         <div class="section">
           <h2>Deine Termine</h2>
           ${assignedHtml}
-          <button class="btn btn-primary" id="btnLogout">Abmelden</button>
+          <button class="btn btn-primary" id="btnLogout" style="margin-top:15px;">Abmelden</button>
         </div>
       </div>`;
 
@@ -349,8 +354,76 @@
       const plan = STATE.plan;
       const techs = STATE.technicians.map(t => `<div class="tech-card"><div class="tech-info"><h4>${t.name || "Kein Name"} ${t.approved ? "✅" : "⏳"}</h4><p><span class="role-badge">${techRoleLabel(t)}</span> ${t.email}</p></div><div style="display:flex;gap:8px;"><button class="btn btn-success btn-small" data-id="${t.id}" data-app="true">✓</button><button class="btn btn-danger btn-small" data-id="${t.id}" data-app="false">✕</button></div></div>`).join("");
 
+      let planHtml = '';
+      if (plan) {
+        const myResp = STATE.responses[STATE.user.id] || {};
+        const myComm = STATE.techComments[STATE.user.id] || {};
+        const adminRows = STATE.planSundays.map(date => {
+          const my = myResp[date];
+          const comment = myComm[date] || "";
+          return `<tr>
+            <td class="date-cell"><strong>${fmtDateDE(date)}</strong></td>
+            <td><div class="color-row">
+              <div class="color-option color-red ${my === "red" ? "selected" : ""}" data-date="${date}" data-color="red" data-admin="true"></div>
+              <div class="color-option color-yellow ${my === "yellow" ? "selected" : ""}" data-date="${date}" data-color="yellow" data-admin="true"></div>
+              <div class="color-option color-green ${my === "green" ? "selected" : ""}" data-date="${date}" data-color="green" data-admin="true"></div>
+            </div></td>
+            <td><textarea class="admin-comment" data-date="${date}" style="width:100%;min-height:50px;font-size:12px;">${comment}</textarea></td>
+          </tr>`;
+        }).join("");
+
+        const allTechs = [STATE.profile, ...STATE.technicians.filter(t => t.approved && t.id !== STATE.profile.id)];
+        const tableHeader = allTechs.map(t => `<th>${t.name || t.email}</th>`).join("");
+        const respRows = STATE.planSundays.map(date => { 
+          const tds = allTechs.map(t => { 
+            const resp = (STATE.responses[t.id] || {})[date]; 
+            const emoji = resp === "green" ? "✅" : resp === "yellow" ? "❓" : resp === "red" ? "❌" : ""; 
+            return `<td class="response-cell">${emoji}</td>`; 
+          }).join(""); 
+          return `<tr><td class="date-cell">${fmtDateDE(date)}</td>${tds}</tr>`; 
+        }).join("");
+
+        planHtml = `
+        <div class="section">
+          <h3>Technik-Übersicht (alle Verfügbarkeiten)</h3>
+          <div class="plan-table">
+            <table>
+              <tr><th>Sonntag</th>${tableHeader}</tr>
+              ${respRows}
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Admin-Eintragung (deine Verfügbarkeit)</h3>
+          <div class="plan-table">
+            <table>
+              <tr><th>Sonntag</th><th style="text-align:center">Verfügbarkeit</th><th>Sonderwünsche</th></tr>
+              ${adminRows}
+            </table>
+          </div>
+          <div class="button-group">
+            <button class="btn btn-success" id="btnSaveAdminAvail">Admin-Eintragung speichern</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Plan Status</h3>
+          <p style="margin-bottom:10px;color:var(--text-light)">Status: <strong>${plan.status}</strong> ${plan.published ? '| LIVE' : '| DRAFT'}</p>
+          <p style="margin-bottom:15px;color:var(--text-light)">Eintragung: <strong>${plan.avail_open ? 'OFFEN' : 'GESPERRT'}</strong></p>
+          <div class="button-group">
+            ${!plan.published ? '<button class="btn btn-success btn-small" id="btnPublish">Freigeben</button>' : ''}
+            ${plan.avail_open ? '<button class="btn btn-danger btn-small" id="btnLock">Sperren</button>' : '<button class="btn btn-success btn-small" id="btnOpen">Öffnen</button>'}
+            <button class="btn btn-primary btn-small" id="btnAutoAssign">Auto-Zuweisung</button>
+            <button class="btn btn-primary btn-small" id="btnExportAll">Kalender Export</button>
+            <button class="btn btn-danger btn-small" id="btnDeletePlan">Löschen</button>
+          </div>
+        </div>
+        `;
+      }
+
       elApp.innerHTML = `<div class="container">
-        <div class="header header-admin"><h1>Admin</h1><p>${STATE.profile.email}</p></div>
+        <div class="header header-admin"><h1>Admin Dashboard <span class="badge">ADMIN</span></h1><p>${STATE.profile.email}</p></div>
         <div class="section">
           <h3>Techniker freischalten</h3>
           <div style="max-height:300px;overflow:auto;">${techs || '<p style="color:var(--text-light)">Keine Techniker</p>'}</div>
@@ -358,22 +431,10 @@
         <div class="section">
           <h3>Neuer Plan</h3>
           <div class="form-row"><input id="planStart" type="date"><input id="planWeeks" type="number" value="4" min="1"></div>
-          <div class="form-group"><label>Admin-Kommentar</label><textarea id="adminComment" placeholder="z.B. Kaffee und Kuchen"></textarea></div>
+          <div class="form-group"><label>Admin-Kommentar</label><textarea id="adminComment" placeholder="z.B. Kaffee und Kuchen" style="min-height:80px;"></textarea></div>
           <button class="btn btn-primary" id="btnCreatePlan">Plan erstellen</button>
         </div>
-        ${plan ? `
-        <div class="section">
-          <h3>Plan: ${plan.status} ${plan.published ? '(LIVE)' : '(DRAFT)'}</h3>
-          <p style="margin-bottom:10px;color:var(--text-light)">Eintragung: <strong>${plan.avail_open ? 'OFFEN' : 'GESPERRT'}</strong></p>
-          <div class="button-group">
-            ${!plan.published ? '<button class="btn btn-success btn-small" id="btnPublish">Freigeben</button>' : ''}
-            ${plan.avail_open ? '<button class="btn btn-danger btn-small" id="btnLock">Sperren</button>' : '<button class="btn btn-success btn-small" id="btnOpen">Öffnen</button>'}
-            <button class="btn btn-primary btn-small" id="btnAutoAssign">Auto-Zuweisung</button>
-            <button class="btn btn-primary btn-small" id="btnExportAll">Export</button>
-            <button class="btn btn-danger btn-small" id="btnDeletePlan">Löschen</button>
-          </div>
-        </div>
-        ` : '<div class="section"><p style="color:var(--text-light)">Kein Plan vorhanden</p></div>'}
+        ${planHtml}
         <div class="section"><button class="btn btn-primary" id="btnLogout">Abmelden</button></div>
       </div>`;
 
@@ -404,6 +465,7 @@
           if (error) return toast("Fehler: " + error.message);
           await refreshAdmin();
         });
+        document.getElementById("btnSaveAdminAvail")?.addEventListener("click", saveAdminAvailability);
         document.getElementById("btnDeletePlan")?.addEventListener("click", async () => {
           if (!confirm("Wirklich löschen?")) return;
           const { error } = await sb.from("plans").delete().eq("id", plan.id);
@@ -412,7 +474,35 @@
         });
         document.getElementById("btnAutoAssign")?.addEventListener("click", autoAssign);
         document.getElementById("btnExportAll")?.addEventListener("click", exportAllCalendar);
+        elApp.querySelectorAll(".color-option[data-admin='true']").forEach(el => {
+          el.addEventListener("click", () => {
+            const date = el.getAttribute("data-date");
+            const color = el.getAttribute("data-color");
+            if (!STATE.responses[STATE.user.id]) STATE.responses[STATE.user.id] = {};
+            STATE.responses[STATE.user.id][date] = color;
+            renderAdmin();
+          });
+        });
+        elApp.querySelectorAll(".admin-comment").forEach(el => {
+          el.addEventListener("input", () => {
+            const date = el.getAttribute("data-date");
+            if (!STATE.techComments[STATE.user.id]) STATE.techComments[STATE.user.id] = {};
+            STATE.techComments[STATE.user.id][date] = el.value;
+          });
+        });
       }
+    }
+
+    async function saveAdminAvailability() {
+      if (!STATE.plan) return;
+      const myResp = STATE.responses[STATE.user.id] || {};
+      const myComm = STATE.techComments[STATE.user.id] || {};
+      const rows = STATE.planSundays.map(d => ({ planid: STATE.plan.id, techid: STATE.user.id, sunday: d, response: myResp[d] || null, techcomment: myComm[d] || "" }));
+      const { error } = await sb.from("responses").upsert(rows, { onConflict: "planid,techid,sunday" });
+      if (error) return toast("Fehler: " + error.message);
+      toast("Admin-Eintragung gespeichert!");
+      await fetchResponsesAndAssignments();
+      renderAdmin();
     }
 
     async function createPlan() {
@@ -460,10 +550,10 @@
     function exportAllCalendar() {
       if (!STATE.plan || !STATE.planSundays.length) return toast("Kein Plan.");
       let ical = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CGH//EN\nX-WR-CALNAME:CGH Plan\nX-WR-TIMEZONE:Europe/Berlin\nEND:VTIMEZONE\n`;
-      const techs = STATE.technicians.filter(t => t.approved);
+      const allTechs = [STATE.profile, ...STATE.technicians.filter(t => t.approved && t.id !== STATE.profile.id)];
       STATE.planSundays.forEach(date => {
         const ids = STATE.assignments[date] || [];
-        const names = ids.map(id => { const t = techs.find(x => x.id === id); return t ? (t.name || t.email) : "?"; }).join(", ");
+        const names = ids.map(id => { const t = allTechs.find(x => x.id === id); return t ? (t.name || t.email) : "?"; }).join(", ");
         const d = new Date(date + "T18:00:00Z");
         const start = d.toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
         const end = new Date(d.getTime() + 3 * 3600000).toISOString().replace(/[-:]/g, "").slice(0, -4) + "Z";
