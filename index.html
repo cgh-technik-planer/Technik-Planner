@@ -351,11 +351,11 @@
       return STATE.profile;
     }
 
-    async function fetchCurrentPlan(isAdmin) {
+       async function fetchCurrentPlan(isAdmin) {
       let q = sb
         .from("plans")
-        .select("id,status,createdat,createdby,published,admincomment,availopen")
-        .order("createdat", { ascending: false })
+        .select("id,status,createdby,published,admincomment,availopen")
+        .order("created_at", { ascending: false })
         .limit(1);
       if (!isAdmin) q = q.eq("published", true);
 
@@ -367,6 +367,18 @@
         STATE.planSundays = [];
         return null;
       }
+
+      const { data: sundays, error: e2 } = await sb
+        .from("plansundays")
+        .select("sunday")
+        .eq("planid", STATE.plan.id)
+        .order("sunday", { ascending: true });
+      if (e2) throw e2;
+
+      STATE.planSundays = (sundays || []).map(x => x.sunday);
+      return STATE.plan;
+    }
+
 
       const { data: sundays, error: e2 } = await sb
         .from("plansundays")
