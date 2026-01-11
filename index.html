@@ -1015,7 +1015,7 @@ END:VEVENT
         <div class="section" id="adminPlanSection">
           <h3>Aktueller Plan ${pubBadge} - Status <strong>${plan.status}</strong></h3>
           <p style="color:var(--text-light);font-size:13px;margin-bottom:10px;">
-            Erstellt ${new Date(plan.createdat).toLocaleDateString("de-DE")} | ${STATE.planSundays.length} Sonntage
+            Erstellt ${new Date(plan.created_at).toLocaleDateString("de-DE")}
           </p>
           <p style="color:var(--text-light);font-size:13px;margin-bottom:15px;">
             Eintragung <strong>${plan.availopen ? "OFFEN" : "GESPERRT"}</strong>
