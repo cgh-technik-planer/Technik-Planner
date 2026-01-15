@@ -631,7 +631,7 @@
     // ===== INIT =====
     async function init() {
         if (!supabase) {
-           
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
         try {
             const stored = localStorage.getItem('cgh_tech_user');
@@ -709,7 +709,6 @@
             return;
         }
 
-        // Check if email exists
         const { data: existing } = await supabase
             .from('profiles')
             .select('id')
@@ -720,7 +719,6 @@
             return;
         }
 
-        // Insert new technician
         const { data: newUser, error } = await supabase
             .from('profiles')
             .insert([
@@ -739,7 +737,6 @@
             return;
         }
 
-        // Save password locally
         const passwords = JSON.parse(localStorage.getItem('cgh_tech_passwords') || '{}');
         passwords[email] = password;
         localStorage.setItem('cgh_tech_passwords', JSON.stringify(passwords));
@@ -796,7 +793,6 @@
         document.getElementById('login-password').value = '';
     }
 
-    // ===== PLAN MANAGEMENT =====
     async function createPlan() {
         const startDate = document.getElementById('start-date').value;
         const numSundays = parseInt(document.getElementById('num-sundays').value);
@@ -819,14 +815,12 @@
             sundays.push(d.toISOString().split('T')[0]);
         }
 
-        // Delete old plan if exists
         if (APP.plan) {
             await supabase.from('availability').delete().neq('sunday_date', '');
             await supabase.from('assignments').delete().neq('sunday_date', '');
             await supabase.from('plans').delete().eq('id', APP.plan.id);
         }
 
-        // Create new plan
         const { data: newPlan, error } = await supabase
             .from('plans')
             .insert([{ sundays: JSON.stringify(sundays), published: false }])
@@ -841,7 +835,6 @@
         APP.plan = newPlan;
         APP.availability = {};
 
-        // Create availability entries for all technicians
         const availEntries = [];
         APP.technicians.forEach(tech => {
             sundays.forEach(sunday => {
@@ -879,7 +872,6 @@
         toast('✅ Plan gelöscht!', 'success');
     }
 
-    // ===== TECHNICIAN MANAGEMENT =====
     async function addTechnician() {
         const name = document.getElementById('tech-name').value;
         const email = document.getElementById('tech-email').value;
@@ -928,7 +920,6 @@
         toast('✅ Techniker gelöscht!', 'success');
     }
 
-    // ===== AVAILABILITY =====
     async function updateAvailability(techId, sunday, status) {
         const { error } = await supabase
             .from('availability')
@@ -941,14 +932,12 @@
         if (!APP.availability[sunday]) APP.availability[sunday] = {};
         APP.availability[sunday][techId] = status;
 
-        // Auto-assign if admin changed availability
         if (APP.isAdmin) {
             await autoAssignTeam(sunday);
         }
     }
 
     async function autoAssignTeam(sunday) {
-        // Remove old assignments for this sunday
         await supabase.from('assignments').delete().eq('sunday_date', sunday);
 
         const available = APP.technicians.filter(tech => {
@@ -958,7 +947,6 @@
 
         if (available.length === 0) return;
 
-        // Select one Ton + one Video if possible
         const ton = available.find(t => t.specialization && t.specialization.includes('Ton'));
         const video = available.find(t => t.specialization && t.specialization.includes('Video'));
 
@@ -976,7 +964,6 @@
         await loadData();
     }
 
-    // ===== PUBLISH PLAN =====
     async function publishPlan() {
         if (!APP.plan) return;
 
@@ -995,7 +982,6 @@
         toast('✅ Plan freigegeben!', 'success');
     }
 
-    // ===== EXPORT =====
     function exportToIcal() {
         if (!APP.plan || !APP.currentUser) {
             toast('Kein Plan oder User!', 'error');
@@ -1026,7 +1012,6 @@ X-WR-CALDESC:Technik Plan für CGH
                 const dtEnd = new Date(d.getTime() + 90 * 60000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
                 const uid = `technik-${APP.currentUser.id}-${sunday}@cgh.local`;
-                const techName = APP.currentUser.name || 'Techniker';
 
                 icalContent += `BEGIN:VEVENT
 UID:${uid}
@@ -1088,7 +1073,6 @@ END:VEVENT
         toast('✅ CSV exportiert!', 'success');
     }
 
-    // ===== RENDERING =====
     async function renderUI() {
         if (APP.isAdmin) {
             renderAdminDashboard();
@@ -1175,13 +1159,11 @@ END:VEVENT
 
         html += '</tr></thead><tbody>';
 
-        // Add technician rows
         APP.technicians.forEach(tech => {
             if (tech.role !== 'admin') {
                 html += `<tr><td><strong>${tech.name}</strong></td>`;
                 sundays.forEach(sunday => {
                     const status = APP.availability[sunday] && APP.availability[sunday][tech.id] || 'yellow';
-                    const colors = { green: '🟢', yellow: '🟡', red: '🔴' };
                     html += `<td style="text-align: center;">
                         <div class="color-group">
                             <button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'green')">🟢</button>
@@ -1194,7 +1176,6 @@ END:VEVENT
             }
         });
 
-        // Add ADMIN row
         html += `<tr style="background: rgba(192, 21, 48, 0.1); font-weight: bold;"><td>👨‍💼 Admin (${APP.currentUser.name})</td>`;
         sundays.forEach(sunday => {
             const status = APP.availability[sunday] && APP.availability[sunday][APP.currentUser.id] || 'yellow';
@@ -1208,16 +1189,11 @@ END:VEVENT
         });
         html += '</tr></tbody></table>';
 
-        // Add a special card explaining this
         const cardHtml = `
             <div class="admin-controls" style="margin-top: 20px;">
                 <h3>👨‍💼 Admin Selbsteintrag</h3>
                 <p style="font-size: 13px; margin-bottom: 10px;">
-                    Als Admin kannst du dich auch selbst für Termine eintragen und bist dann in der Zuweisung mit dabei. 
-                    Nutze die Buttons in deiner Reihe (unten), um deine Verfügbarkeit zu setzen.
-                </p>
-                <p style="font-size: 12px; color: #666;">
-                    🟢 Verfügbar | 🟡 Eher nicht | 🔴 Nicht verfügbar
+                    Als Admin kannst du dich auch selbst für Termine eintragen und bist dann in der Zuweisung mit dabei.
                 </p>
             </div>
             ${html}
