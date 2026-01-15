@@ -631,7 +631,8 @@
     // ===== INIT =====
     async function init() {
         if (!supabase) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            let supabase = null;
+
         }
         try {
             const stored = localStorage.getItem('cgh_tech_user');
