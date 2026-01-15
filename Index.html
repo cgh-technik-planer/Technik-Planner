@@ -64,6 +64,7 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+            margin-left: 15px;
         }
 
         .logout-btn:hover {
@@ -96,16 +97,10 @@
 
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s;
         }
 
         .tab-content.active {
             display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .card {
@@ -137,7 +132,7 @@
             font-family: inherit;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus, select:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(32, 128, 133, 0.1);
@@ -162,34 +157,6 @@
             background: #1a6b70;
         }
 
-        .btn-secondary {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--light);
-        }
-
-        .btn-admin {
-            background: var(--admin);
-            color: var(--white);
-        }
-
-        .btn-admin:hover {
-            background: #a01228;
-        }
-
-        .btn-export {
-            background: #0066cc;
-            color: var(--white);
-        }
-
-        .btn-export:hover {
-            background: #0052a3;
-        }
-
         .btn-delete {
             background: #d32f2f;
             color: var(--white);
@@ -202,6 +169,15 @@
         .btn-small {
             padding: 6px 12px;
             font-size: 12px;
+        }
+
+        .btn-export {
+            background: #0066cc;
+            color: var(--white);
+        }
+
+        .btn-export:hover {
+            background: #0052a3;
         }
 
         .grid {
@@ -388,6 +364,11 @@
             gap: 15px;
         }
 
+        .login-form {
+            max-width: 400px;
+            margin: 60px auto;
+        }
+
         @media (max-width: 768px) {
             .two-col {
                 grid-template-columns: 1fr;
@@ -401,19 +382,15 @@
             .tabs {
                 flex-wrap: wrap;
             }
-
-            .color-group {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- LOGIN -->
-    <div id="login-view" style="display:none;">
-        <div style="max-width: 400px; margin: 60px auto;">
+    <!-- LOGIN VIEW -->
+    <div id="login-view">
+        <div class="login-form">
             <div class="card">
                 <h2 style="text-align: center; color: var(--primary); margin-bottom: 30px;">🔧 CGH Technik Planer</h2>
                 
@@ -427,68 +404,24 @@
                     <input type="password" id="login-password" placeholder="Passwort">
                 </div>
 
-                <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%;">Anmelden</button>
-
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid var(--border);">
-
-                <p style="text-align: center; font-size: 12px; margin-bottom: 10px;">Noch kein Konto?</p>
-                <button class="btn btn-secondary" onclick="showRegister()" style="width: 100%;">Als Techniker registrieren</button>
+                <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; margin-bottom: 10px;">Anmelden</button>
+                <button class="btn" onclick="showRegister()" style="width: 100%; background: var(--bg); border: 1px solid var(--border);">Als Techniker registrieren</button>
             </div>
 
             <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #666;">
-                <p><strong>Admin-Login:</strong></p>
-                <p>Email: admin@CGH.de</p>
-                <p>Passwort: Technik2026</p>
+                <p><strong>Test-Admin:</strong></p>
+                <p>Email: admin@cgh.de | Passwort: Technik2026</p>
             </div>
         </div>
     </div>
 
-    <!-- REGISTER -->
-    <div id="register-view" style="display:none;">
-        <div style="max-width: 400px; margin: 60px auto;">
-            <div class="card">
-                <h2 style="text-align: center; color: var(--primary); margin-bottom: 30px;">📝 Als Techniker registrieren</h2>
-                
-                <div class="form-group">
-                    <label>Name</label>
-                    <input type="text" id="reg-name" placeholder="Dein Name">
-                </div>
-
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="reg-email" placeholder="deine@email.de">
-                </div>
-
-                <div class="form-group">
-                    <label>Passwort (merken!)</label>
-                    <input type="password" id="reg-password" placeholder="Dein sicheres Passwort">
-                </div>
-
-                <div class="form-group">
-                    <label>Rolle</label>
-                    <select id="reg-role">
-                        <option value="">-- Wählen --</option>
-                        <option value="🎤 Ton">🎤 Ton</option>
-                        <option value="📹 Video">📹 Video</option>
-                        <option value="💡 Licht">💡 Licht</option>
-                        <option value="🖥️ Netzwerk">🖥️ Netzwerk</option>
-                        <option value="🎤📹 Ton + Video">🎤📹 Ton + Video</option>
-                    </select>
-                </div>
-
-                <button class="btn btn-primary" onclick="handleRegister()" style="width: 100%; margin-bottom: 10px;">Registrieren</button>
-                <button class="btn btn-secondary" onclick="showLogin()" style="width: 100%;">Zurück zum Login</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- APP -->
+    <!-- APP VIEW -->
     <div id="app-view" style="display:none;">
         <header>
             <div>
                 <h1>🔧 CGH Technik Planer</h1>
             </div>
-            <div>
+            <div style="display: flex; align-items: center;">
                 <div class="user-info" id="user-info"></div>
                 <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
@@ -516,7 +449,7 @@
                 </div>
             </div>
 
-            <!-- Admin Controls -->
+            <!-- Plan Management -->
             <div class="admin-controls">
                 <h3>⚙️ Plan Management</h3>
                 
@@ -583,31 +516,28 @@
                 <h3>📋 Plan Übersicht</h3>
                 <div id="admin-dashboard"></div>
             </div>
+
+            <!-- Availability Grid -->
+            <div class="card">
+                <h3>✋ Verfügbarkeit Management</h3>
+                <div id="availability-admin"></div>
+            </div>
         </div>
 
         <!-- TECHNIKER TAB -->
         <div id="tech" class="tab-content">
             <div class="card">
-                <h3>📅 Meine Termine & Export</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
-                    Hier kannst du sehen, an welchen Terminen du eingeplant bist und den Plan in deinen Kalender exportieren.
-                </p>
-
-                <div id="tech-schedule" style="margin-bottom: 20px;"></div>
-
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-export" onclick="exportToIcal()">📅 In Kalender exportieren (iCal)</button>
-                    <button class="btn btn-export" onclick="exportToCsv()">📊 Als CSV exportieren</button>
+                <h3>📅 Meine Termine</h3>
+                <div id="tech-schedule"></div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                    <button class="btn btn-export" onclick="exportToIcal()">📅 iCal Export</button>
+                    <button class="btn btn-export" onclick="exportToCsv()">📊 CSV Export</button>
                 </div>
             </div>
 
-            <!-- Verfügbarkeit -->
             <div class="card">
-                <h3>✋ Verfügbarkeit eintragen</h3>
-                <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
-                    🟢 = Verfügbar | 🟡 = Eher nicht | 🔴 = Nicht verfügbar
-                </p>
-                <div id="availability-form"></div>
+                <h3>✋ Meine Verfügbarkeit</h3>
+                <div id="availability-tech"></div>
             </div>
         </div>
     </div>
@@ -618,179 +548,130 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3B1Z2ZxbHRpbGp2bml0c24iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcwNDkwNzEzNywiZXhwIjoxNzM2NDQzMTM3fQ.qlXET4T6Hgu8UIe3b5aocgdItJEBjI3FzEzPZVePti6';
 
     let supabase = null;
-
-    let APP = {
-        currentUser: null,
-        isAdmin: false,
+    let currentUser = null;
+    let isAdmin = false;
+    let appData = {
         plan: null,
         technicians: [],
         availability: {},
         assignments: {}
     };
 
-    // ===== INIT =====
-    async function init() {
-        if (!supabase) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
-        try {
-            const stored = localStorage.getItem('cgh_tech_user');
-            if (stored) {
-                APP.currentUser = JSON.parse(stored);
-                await loadData();
-                showApp();
-            } else {
-                showLogin();
-            }
-        } catch (e) {
-            console.error('Init error:', e);
+    async function initSupabase() {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const stored = localStorage.getItem('cgh_user');
+        if (stored) {
+            currentUser = JSON.parse(stored);
+            isAdmin = currentUser.role === 'admin';
+            await loadData();
+            showApp();
+        } else {
             showLogin();
         }
     }
 
-    // ===== LOGIN / REGISTER / LOGOUT =====
     function showLogin() {
         document.getElementById('login-view').style.display = 'block';
-        document.getElementById('register-view').style.display = 'none';
         document.getElementById('app-view').style.display = 'none';
     }
 
-    function showRegister() {
+    async function showApp() {
         document.getElementById('login-view').style.display = 'none';
-        document.getElementById('register-view').style.display = 'block';
-        document.getElementById('app-view').style.display = 'none';
+        document.getElementById('app-view').style.display = 'block';
+        const roleLabel = isAdmin ? '👨‍💼 Admin' : '👤 ' + (currentUser.specialization || 'Techniker');
+        document.getElementById('user-info').textContent = currentUser.name + ' (' + roleLabel + ')';
+        
+        if (!isAdmin) {
+            document.querySelector('.tab-btn:nth-child(1)').style.display = 'none';
+        }
+    }
+
+    function showRegister() {
+        const name = prompt('Name:');
+        if (!name) return;
+        const email = prompt('Email:');
+        if (!email) return;
+        const password = prompt('Passwort:');
+        if (!password) return;
+        
+        supabase.from('profiles').insert([{ 
+            name, 
+            email, 
+            role: 'technician',
+            specialization: '🎤 Ton'
+        }]).then(() => {
+            const passwords = JSON.parse(localStorage.getItem('cgh_passwords') || '{}');
+            passwords[email] = password;
+            localStorage.setItem('cgh_passwords', JSON.stringify(passwords));
+            toast('Registriert! Jetzt anmelden.', 'success');
+            showLogin();
+            document.getElementById('login-email').value = email;
+        }).catch(e => toast('Fehler: ' + e.message, 'error'));
     }
 
     async function handleLogin() {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-
+        
         if (!email || !password) {
-            toast('Bitte alle Felder füllen!', 'error');
+            toast('Bitte alle Felder ausfüllen!', 'error');
             return;
         }
 
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', email)
-            .single();
-
-        if (error || !data) {
-            toast('Email nicht bekannt', 'error');
+        const { data } = await supabase.from('profiles').select('*').eq('email', email).single();
+        if (!data) {
+            toast('Email nicht gefunden', 'error');
             return;
         }
 
-        const storedPassword = localStorage.getItem('cgh_tech_passwords');
-        const passwords = storedPassword ? JSON.parse(storedPassword) : {};
-
-        if (!passwords[email] || passwords[email] !== password) {
+        const passwords = JSON.parse(localStorage.getItem('cgh_passwords') || '{}');
+        if (passwords[email] !== password) {
             toast('Falsches Passwort!', 'error');
             return;
         }
 
-        APP.currentUser = data;
-        APP.isAdmin = data.role === 'admin';
-        localStorage.setItem('cgh_tech_user', JSON.stringify(APP.currentUser));
-
+        currentUser = data;
+        isAdmin = data.role === 'admin';
+        localStorage.setItem('cgh_user', JSON.stringify(data));
         await loadData();
         showApp();
         toast('✅ Willkommen ' + data.name + '!', 'success');
     }
 
-    async function handleRegister() {
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
-        const role = document.getElementById('reg-role').value;
-
-        if (!name || !email || !password || !role) {
-            toast('Bitte alle Felder füllen!', 'error');
-            return;
-        }
-
-        const { data: existing } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email);
-
-        if (existing && existing.length > 0) {
-            toast('Email existiert bereits!', 'error');
-            return;
-        }
-
-        const { data: newUser, error } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    name,
-                    email,
-                    role: 'technician',
-                    specialization: role
-                }
-            ])
-            .select()
-            .single();
-
-        if (error) {
-            toast('Fehler beim Registrieren: ' + error.message, 'error');
-            return;
-        }
-
-        const passwords = JSON.parse(localStorage.getItem('cgh_tech_passwords') || '{}');
-        passwords[email] = password;
-        localStorage.setItem('cgh_tech_passwords', JSON.stringify(passwords));
-
-        toast('✅ Registrierung erfolgreich! Melde dich jetzt an.', 'success');
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem('cgh_user');
+        document.getElementById('login-email').value = '';
+        document.getElementById('login-password').value = '';
         showLogin();
-        document.getElementById('login-email').value = email;
     }
 
     async function loadData() {
         const { data: techs } = await supabase.from('profiles').select('*');
-        const { data: planData } = await supabase.from('plans').select('*').single();
+        const { data: plans } = await supabase.from('plans').select('*').single().catch(() => ({ data: null }));
         const { data: avail } = await supabase.from('availability').select('*');
         const { data: assign } = await supabase.from('assignments').select('*');
 
-        APP.technicians = techs || [];
-        APP.plan = planData || null;
-        APP.availability = {};
-        APP.assignments = {};
+        appData.technicians = techs || [];
+        appData.plan = plans || null;
+        appData.availability = {};
+        appData.assignments = {};
 
         if (avail) {
             avail.forEach(a => {
-                if (!APP.availability[a.sunday_date]) APP.availability[a.sunday_date] = {};
-                APP.availability[a.sunday_date][a.technician_id] = a.availability_status;
+                if (!appData.availability[a.sunday_date]) appData.availability[a.sunday_date] = {};
+                appData.availability[a.sunday_date][a.technician_id] = a.availability_status;
             });
         }
 
         if (assign) {
             assign.forEach(a => {
-                if (!APP.assignments[a.sunday_date]) APP.assignments[a.sunday_date] = [];
-                APP.assignments[a.sunday_date].push(a);
+                if (!appData.assignments[a.sunday_date]) appData.assignments[a.sunday_date] = [];
+                appData.assignments[a.sunday_date].push(a);
             });
         }
 
-        await renderUI();
-    }
-
-    async function showApp() {
-        document.getElementById('login-view').style.display = 'none';
-        document.getElementById('register-view').style.display = 'none';
-        document.getElementById('app-view').style.display = 'block';
-
-        const user = APP.currentUser;
-        const roleLabel = APP.isAdmin ? '👨‍💼 Admin' : '👤 ' + user.specialization;
-        document.getElementById('user-info').textContent = `${user.name} (${roleLabel})`;
-    }
-
-    function logout() {
-        APP.currentUser = null;
-        APP.isAdmin = false;
-        localStorage.removeItem('cgh_tech_user');
-        showLogin();
-        document.getElementById('login-email').value = '';
-        document.getElementById('login-password').value = '';
+        renderUI();
     }
 
     async function createPlan() {
@@ -798,7 +679,7 @@
         const numSundays = parseInt(document.getElementById('num-sundays').value);
 
         if (!startDate || numSundays < 1) {
-            toast('Bitte Startdatum und Anzahl eintragen!', 'error');
+            toast('Bitte Startdatum eingeben!', 'error');
             return;
         }
 
@@ -815,28 +696,19 @@
             sundays.push(d.toISOString().split('T')[0]);
         }
 
-        if (APP.plan) {
+        if (appData.plan) {
             await supabase.from('availability').delete().neq('sunday_date', '');
             await supabase.from('assignments').delete().neq('sunday_date', '');
-            await supabase.from('plans').delete().eq('id', APP.plan.id);
+            await supabase.from('plans').delete().eq('id', appData.plan.id);
         }
 
-        const { data: newPlan, error } = await supabase
-            .from('plans')
-            .insert([{ sundays: JSON.stringify(sundays), published: false }])
-            .select()
-            .single();
-
-        if (error) {
-            toast('Fehler: ' + error.message, 'error');
-            return;
-        }
-
-        APP.plan = newPlan;
-        APP.availability = {};
+        const { data: newPlan } = await supabase.from('plans').insert([{ sundays: JSON.stringify(sundays), published: false }]).select().single();
+        
+        appData.plan = newPlan;
+        appData.availability = {};
 
         const availEntries = [];
-        APP.technicians.forEach(tech => {
+        appData.technicians.forEach(tech => {
             sundays.forEach(sunday => {
                 availEntries.push({
                     plan_id: newPlan.id,
@@ -857,17 +729,14 @@
 
     async function deletePlan() {
         if (!confirm('Plan wirklich löschen?')) return;
-
-        if (APP.plan) {
+        
+        if (appData.plan) {
             await supabase.from('availability').delete().neq('sunday_date', '');
             await supabase.from('assignments').delete().neq('sunday_date', '');
-            await supabase.from('plans').delete().eq('id', APP.plan.id);
+            await supabase.from('plans').delete().eq('id', appData.plan.id);
         }
 
-        APP.plan = null;
-        APP.availability = {};
-        APP.assignments = {};
-
+        appData.plan = null;
         await loadData();
         toast('✅ Plan gelöscht!', 'success');
     }
@@ -878,29 +747,18 @@
         const role = document.getElementById('tech-role').value;
 
         if (!name || !email || !role) {
-            toast('Bitte alle Felder füllen!', 'error');
+            toast('Bitte alle Felder ausfüllen!', 'error');
             return;
         }
 
-        const { data: existing } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email);
-
+        const { data: existing } = await supabase.from('profiles').select('id').eq('email', email);
         if (existing && existing.length > 0) {
             toast('Techniker existiert bereits!', 'error');
             return;
         }
 
-        const { error } = await supabase
-            .from('profiles')
-            .insert([{ name, email, role: 'technician', specialization: role }]);
-
-        if (error) {
-            toast('Fehler: ' + error.message, 'error');
-            return;
-        }
-
+        await supabase.from('profiles').insert([{ name, email, role: 'technician', specialization: role }]);
+        
         document.getElementById('tech-name').value = '';
         document.getElementById('tech-email').value = '';
         document.getElementById('tech-role').value = '';
@@ -910,8 +768,8 @@
     }
 
     async function deleteTechnician(techId) {
-        if (!confirm('Techniker wirklich löschen?')) return;
-
+        if (!confirm('Techniker löschen?')) return;
+        
         await supabase.from('availability').delete().eq('technician_id', techId);
         await supabase.from('assignments').delete().eq('technician_id', techId);
         await supabase.from('profiles').delete().eq('id', techId);
@@ -921,18 +779,12 @@
     }
 
     async function updateAvailability(techId, sunday, status) {
-        const { error } = await supabase
-            .from('availability')
-            .update({ availability_status: status })
-            .eq('technician_id', techId)
-            .eq('sunday_date', sunday);
+        await supabase.from('availability').update({ availability_status: status }).eq('technician_id', techId).eq('sunday_date', sunday);
+        
+        if (!appData.availability[sunday]) appData.availability[sunday] = {};
+        appData.availability[sunday][techId] = status;
 
-        if (error) console.error(error);
-
-        if (!APP.availability[sunday]) APP.availability[sunday] = {};
-        APP.availability[sunday][techId] = status;
-
-        if (APP.isAdmin) {
+        if (isAdmin) {
             await autoAssignTeam(sunday);
         }
     }
@@ -940,8 +792,8 @@
     async function autoAssignTeam(sunday) {
         await supabase.from('assignments').delete().eq('sunday_date', sunday);
 
-        const available = APP.technicians.filter(tech => {
-            const status = APP.availability[sunday] && APP.availability[sunday][tech.id];
+        const available = appData.technicians.filter(tech => {
+            const status = appData.availability[sunday] && appData.availability[sunday][tech.id];
             return status === 'green';
         });
 
@@ -965,308 +817,207 @@
     }
 
     async function publishPlan() {
-        if (!APP.plan) return;
-
-        const { error } = await supabase
-            .from('plans')
-            .update({ published: true })
-            .eq('id', APP.plan.id);
-
-        if (error) {
-            toast('Fehler: ' + error.message, 'error');
-            return;
-        }
-
-        APP.plan.published = true;
-        await loadData();
+        if (!appData.plan) return;
+        
+        await supabase.from('plans').update({ published: true }).eq('id', appData.plan.id);
+        appData.plan.published = true;
+        renderUI();
         toast('✅ Plan freigegeben!', 'success');
     }
 
     function exportToIcal() {
-        if (!APP.plan || !APP.currentUser) {
-            toast('Kein Plan oder User!', 'error');
+        if (!appData.plan) {
+            toast('Kein Plan vorhanden!', 'error');
             return;
         }
 
-        const sundays = JSON.parse(APP.plan.sundays);
-        const assignments = APP.assignments;
-
-        let icalContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//CGH Technik Planer//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-X-WR-CALNAME:CGH Technik Plan
-X-WR-TIMEZONE:Europe/Berlin
-X-WR-CALDESC:Technik Plan für CGH
-
-`;
+        const sundays = JSON.parse(appData.plan.sundays);
+        let ical = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CGH//EN\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\nX-WR-CALNAME:CGH Technik\n\n`;
 
         sundays.forEach(sunday => {
-            const dayAssignments = assignments[sunday] || [];
-            const myAssignment = dayAssignments.find(a => a.technician_id === APP.currentUser.id);
-
-            if (myAssignment) {
+            const assignment = (appData.assignments[sunday] || []).find(a => a.technician_id === currentUser.id);
+            if (assignment) {
                 const d = new Date(sunday + 'T10:00:00');
                 const dtStart = d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
                 const dtEnd = new Date(d.getTime() + 90 * 60000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-                const uid = `technik-${APP.currentUser.id}-${sunday}@cgh.local`;
-
-                icalContent += `BEGIN:VEVENT
-UID:${uid}
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
-DTSTART:${dtStart}
-DTEND:${dtEnd}
-SUMMARY:CGH Technik - ${myAssignment.role}
-DESCRIPTION:Du hast Technik-Dienst. Rolle: ${myAssignment.role}
-LOCATION:Christusgemeinde Hemmingen
-END:VEVENT
-
-`;
+                ical += `BEGIN:VEVENT\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:CGH Technik - ${assignment.role}\nEND:VEVENT\n\n`;
             }
         });
 
-        icalContent += `END:VCALENDAR`;
+        ical += `END:VCALENDAR`;
 
-        const blob = new Blob([icalContent], { type: 'text/calendar' });
+        const blob = new Blob([ical], { type: 'text/calendar' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `CGH-Technik-${APP.currentUser.name}.ics`;
+        a.download = `CGH-${currentUser.name}.ics`;
         a.click();
         URL.revokeObjectURL(url);
-
         toast('✅ iCal exportiert!', 'success');
     }
 
     function exportToCsv() {
-        if (!APP.plan || !APP.currentUser) {
-            toast('Kein Plan oder User!', 'error');
+        if (!appData.plan) {
+            toast('Kein Plan vorhanden!', 'error');
             return;
         }
 
-        const sundays = JSON.parse(APP.plan.sundays);
-        const assignments = APP.assignments;
-
+        const sundays = JSON.parse(appData.plan.sundays);
         let csv = 'Datum,Rolle,Name\n';
 
         sundays.forEach(sunday => {
-            const dayAssignments = assignments[sunday] || [];
-            const myAssignment = dayAssignments.find(a => a.technician_id === APP.currentUser.id);
-
-            if (myAssignment) {
+            const assignment = (appData.assignments[sunday] || []).find(a => a.technician_id === currentUser.id);
+            if (assignment) {
                 const d = new Date(sunday);
-                const dateStr = d.toLocaleDateString('de-DE');
-                csv += `${dateStr},${myAssignment.role},${APP.currentUser.name}\n`;
+                csv += `${d.toLocaleDateString('de-DE')},${assignment.role},${currentUser.name}\n`;
             }
         });
 
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `CGH-Technik-${APP.currentUser.name}.csv`;
+        a.download = `CGH-${currentUser.name}.csv`;
         a.click();
         URL.revokeObjectURL(url);
-
         toast('✅ CSV exportiert!', 'success');
     }
 
-    async function renderUI() {
-        if (APP.isAdmin) {
+    function renderUI() {
+        if (isAdmin) {
             renderAdminDashboard();
             renderTechnicianList();
             renderAvailabilityAdmin();
         } else {
-            renderTechnicianView();
+            renderTechnicianSchedule();
             renderAvailabilityTech();
         }
     }
 
     function renderAdminDashboard() {
-        if (!APP.plan) {
+        if (!appData.plan) {
             document.getElementById('admin-dashboard').innerHTML = '<p style="color: #999;">Kein Plan vorhanden. Erstelle einen!</p>';
             document.getElementById('delete-plan-btn').style.display = 'none';
             return;
         }
 
         document.getElementById('delete-plan-btn').style.display = 'inline-block';
+        const sundays = JSON.parse(appData.plan.sundays);
+        const assigned = Object.keys(appData.assignments).length;
+        const status = appData.plan.published ? '✅ Veröffentlicht' : '⏳ Entwurf';
 
-        const sundays = JSON.parse(APP.plan.sundays);
-        const assigned = Object.keys(APP.assignments).length;
-        const status = APP.plan.published ? '✅ Veröffentlicht' : '⏳ Entwurf';
-
-        document.getElementById('stat-techs').textContent = APP.technicians.length;
+        document.getElementById('stat-techs').textContent = appData.technicians.length;
         document.getElementById('stat-sundays').textContent = sundays.length;
         document.getElementById('stat-assigned').textContent = assigned;
 
-        let html = `<div class="status-badge ${APP.plan.published ? 'status-published' : 'status-draft'}">${status}</div>`;
-
-        if (!APP.plan.published) {
+        let html = `<div class="status-badge ${appData.plan.published ? 'status-published' : 'status-draft'}">${status}</div>`;
+        if (!appData.plan.published) {
             html += `<button class="btn btn-primary btn-small" onclick="publishPlan()" style="margin-left: 10px;">✅ Plan freigeben</button>`;
         }
 
         html += '<div class="grid" style="margin-top: 20px;">';
-
         sundays.forEach(sunday => {
             const d = new Date(sunday);
             const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-            const dayAssignments = APP.assignments[sunday] || [];
-
-            html += `<div class="assignment-card">
-                <h3>${dateStr}</h3>
-                <p><strong>Zugewiesen:</strong> ${dayAssignments.length > 0 ? dayAssignments.length : 'Keine'}</p>`;
-
+            const dayAssignments = appData.assignments[sunday] || [];
+            
+            html += `<div class="assignment-card"><h3>${dateStr}</h3><p><strong>Zugewiesen:</strong> ${dayAssignments.length || 'Keine'}</p>`;
             dayAssignments.forEach(a => {
-                const tech = APP.technicians.find(t => t.id === a.technician_id);
+                const tech = appData.technicians.find(t => t.id === a.technician_id);
                 html += `<p>👤 ${tech?.name} (${a.role})</p>`;
             });
-
             html += `</div>`;
         });
-
         html += '</div>';
         document.getElementById('admin-dashboard').innerHTML = html;
     }
 
     function renderTechnicianList() {
         let html = '';
-        APP.technicians.forEach(tech => {
+        appData.technicians.forEach(tech => {
             if (tech.role !== 'admin') {
-                html += `<tr>
-                    <td>${tech.name}</td>
-                    <td>${tech.email}</td>
-                    <td><span class="role-badge">${tech.specialization}</span></td>
-                    <td><button class="btn btn-delete btn-small" onclick="deleteTechnician('${tech.id}')">Löschen</button></td>
-                </tr>`;
+                html += `<tr><td>${tech.name}</td><td>${tech.email}</td><td><span class="role-badge">${tech.specialization}</span></td><td><button class="btn btn-delete btn-small" onclick="deleteTechnician('${tech.id}')">Löschen</button></td></tr>`;
             }
         });
         document.getElementById('tech-list').innerHTML = html;
     }
 
     function renderAvailabilityAdmin() {
-        if (!APP.plan) return;
-
-        const sundays = JSON.parse(APP.plan.sundays);
+        if (!appData.plan) return;
+        
+        const sundays = JSON.parse(appData.plan.sundays);
         let html = '<table><thead><tr><th>Techniker</th>';
-
         sundays.forEach(sunday => {
             const d = new Date(sunday);
-            const dateStr = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-            html += `<th>${dateStr}</th>`;
+            html += `<th>${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</th>`;
         });
-
         html += '</tr></thead><tbody>';
 
-        APP.technicians.forEach(tech => {
+        appData.technicians.forEach(tech => {
             if (tech.role !== 'admin') {
                 html += `<tr><td><strong>${tech.name}</strong></td>`;
                 sundays.forEach(sunday => {
-                    const status = APP.availability[sunday] && APP.availability[sunday][tech.id] || 'yellow';
-                    html += `<td style="text-align: center;">
-                        <div class="color-group">
-                            <button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'green')">🟢</button>
-                            <button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'yellow')">🟡</button>
-                            <button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'red')">🔴</button>
-                        </div>
-                    </td>`;
+                    const status = appData.availability[sunday]?.[tech.id] || 'yellow';
+                    html += `<td style="text-align: center;"><div class="color-group"><button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'green')">🟢</button><button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'yellow')">🟡</button><button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${tech.id}', '${sunday}', 'red')">🔴</button></div></td>`;
                 });
                 html += '</tr>';
             }
         });
 
-        html += `<tr style="background: rgba(192, 21, 48, 0.1); font-weight: bold;"><td>👨‍💼 Admin (${APP.currentUser.name})</td>`;
+        html += `<tr style="background: rgba(192, 21, 48, 0.1); font-weight: bold;"><td>👨‍💼 Admin</td>`;
         sundays.forEach(sunday => {
-            const status = APP.availability[sunday] && APP.availability[sunday][APP.currentUser.id] || 'yellow';
-            html += `<td style="text-align: center;">
-                <div class="color-group">
-                    <button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'green')">🟢</button>
-                    <button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'yellow')">🟡</button>
-                    <button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'red')">🔴</button>
-                </div>
-            </td>`;
+            const status = appData.availability[sunday]?.[currentUser.id] || 'yellow';
+            html += `<td style="text-align: center;"><div class="color-group"><button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'green')">🟢</button><button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'yellow')">🟡</button><button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'red')">🔴</button></div></td>`;
         });
         html += '</tr></tbody></table>';
-
-        const cardHtml = `
-            <div class="admin-controls" style="margin-top: 20px;">
-                <h3>👨‍💼 Admin Selbsteintrag</h3>
-                <p style="font-size: 13px; margin-bottom: 10px;">
-                    Als Admin kannst du dich auch selbst für Termine eintragen und bist dann in der Zuweisung mit dabei.
-                </p>
-            </div>
-            ${html}
-        `;
-
-        document.getElementById('availability-form').innerHTML = cardHtml;
+        document.getElementById('availability-admin').innerHTML = html;
     }
 
-    function renderTechnicianView() {
-        if (!APP.plan || !APP.plan.published) {
+    function renderTechnicianSchedule() {
+        if (!appData.plan || !appData.plan.published) {
             document.getElementById('tech-schedule').innerHTML = '<p style="color: #999;">Plan noch nicht freigegeben.</p>';
-            document.getElementById('availability-form').innerHTML = '';
             return;
         }
 
-        const sundays = JSON.parse(APP.plan.sundays);
-        const assignments = APP.assignments;
-
+        const sundays = JSON.parse(appData.plan.sundays);
         let html = '<div class="grid">';
-
         sundays.forEach(sunday => {
             const d = new Date(sunday);
-            const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
-            const dayAssignments = assignments[sunday] || [];
-            const myAssignment = dayAssignments.find(a => a.technician_id === APP.currentUser.id);
-
-            const bgColor = myAssignment ? '#c8e6c9' : '#f5f5f5';
-            const status = myAssignment ? `✅ ${myAssignment.role}` : '❌ Nicht eingeplant';
-
-            html += `<div class="assignment-card" style="background: ${bgColor}; border-left-color: ${myAssignment ? '#4caf50' : '#999'};">
-                <h3>${dateStr}</h3>
-                <p><strong>${status}</strong></p>
-            </div>`;
+            const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+            const assignment = (appData.assignments[sunday] || []).find(a => a.technician_id === currentUser.id);
+            const status = assignment ? `✅ ${assignment.role}` : '❌ Nicht eingeplant';
+            const bgColor = assignment ? '#c8e6c9' : '#f5f5f5';
+            
+            html += `<div class="assignment-card" style="background: ${bgColor}; border-left-color: ${assignment ? '#4caf50' : '#999'};"><h3>${dateStr}</h3><p><strong>${status}</strong></p></div>`;
         });
-
         html += '</div>';
         document.getElementById('tech-schedule').innerHTML = html;
     }
 
     function renderAvailabilityTech() {
-        if (!APP.plan) {
-            document.getElementById('availability-form').innerHTML = '<p style="color: #999;">Kein Plan vorhanden.</p>';
+        if (!appData.plan) {
+            document.getElementById('availability-tech').innerHTML = '<p style="color: #999;">Kein Plan vorhanden.</p>';
             return;
         }
 
-        const sundays = JSON.parse(APP.plan.sundays);
+        const sundays = JSON.parse(appData.plan.sundays);
         let html = '<table><thead><tr><th>Datum</th><th>Verfügbarkeit</th></tr></thead><tbody>';
 
         sundays.forEach(sunday => {
             const d = new Date(sunday);
             const dateStr = d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
-            const status = APP.availability[sunday] && APP.availability[sunday][APP.currentUser.id] || 'yellow';
-
-            html += `<tr>
-                <td>${dateStr}</td>
-                <td style="text-align: center;">
-                    <div class="color-group">
-                        <button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'green')">🟢 Ja</button>
-                        <button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'yellow')">🟡 Eher nicht</button>
-                        <button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${APP.currentUser.id}', '${sunday}', 'red')">🔴 Nein</button>
-                    </div>
-                </td>
-            </tr>`;
+            const status = appData.availability[sunday]?.[currentUser.id] || 'yellow';
+            
+            html += `<tr><td>${dateStr}</td><td style="text-align: center;"><div class="color-group"><button class="color-btn green ${status === 'green' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'green')">🟢 Ja</button><button class="color-btn yellow ${status === 'yellow' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'yellow')">🟡 Eher nicht</button><button class="color-btn red ${status === 'red' ? 'selected' : ''}" onclick="updateAvailability('${currentUser.id}', '${sunday}', 'red')">🔴 Nein</button></div></td></tr>`;
         });
 
         html += '</tbody></table>';
-        document.getElementById('availability-form').innerHTML = html;
+        document.getElementById('availability-tech').innerHTML = html;
     }
 
     function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        
         document.getElementById(tab).classList.add('active');
         event.target.classList.add('active');
     }
@@ -1276,12 +1027,28 @@ END:VEVENT
         el.className = 'toast ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
         el.textContent = msg;
         document.body.appendChild(el);
-
         setTimeout(() => el.remove(), 3000);
     }
 
-    // ===== INIT =====
-    init();
+    // Erstelle Admin-Account wenn nicht vorhanden
+    async function ensureAdmin() {
+        const { data: admin } = await supabase.from('profiles').select('id').eq('email', 'admin@cgh.de').single().catch(() => ({ data: null }));
+        if (!admin) {
+            await supabase.from('profiles').insert([{
+                name: 'Admin',
+                email: 'admin@cgh.de',
+                role: 'admin',
+                specialization: '🎤 Admin'
+            }]).catch(console.error);
+            
+            const passwords = JSON.parse(localStorage.getItem('cgh_passwords') || '{}');
+            passwords['admin@cgh.de'] = 'Technik2026';
+            localStorage.setItem('cgh_passwords', JSON.stringify(passwords));
+        }
+    }
+
+    initSupabase();
+    ensureAdmin();
 </script>
 
 </body>
