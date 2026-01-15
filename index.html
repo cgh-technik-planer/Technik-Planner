@@ -617,7 +617,7 @@
     const SUPABASE_URL = 'https://orcpugfqltiljnvlitsn.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yY3B1Z2ZxbHRpbGp2bml0c24iLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcwNDkwNzEzNywiZXhwIjoxNzM2NDQzMTM3fQ.qlXET4T6Hgu8UIe3b5aocgdItJEBjI3FzEzPZVePti6';
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let supabase = null;
 
     let APP = {
         currentUser: null,
@@ -630,6 +630,9 @@
 
     // ===== INIT =====
     async function init() {
+        if (!supabase) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
         try {
             const stored = localStorage.getItem('cgh_tech_user');
             if (stored) {
